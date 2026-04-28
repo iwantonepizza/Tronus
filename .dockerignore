@@ -19,3 +19,5 @@ postgres_data/
 .vscode/
 node_modules/
 backend/.pytest_cache/
+!frontend/src/build/
+!frontend/src/build/noop-mocks-data.ts
