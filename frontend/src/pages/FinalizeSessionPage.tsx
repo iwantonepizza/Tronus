@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import ReactConfetti from 'react-confetti'
 import { Castle, GripVertical, ScrollText, ShieldAlert } from 'lucide-react'
 import { Navigate, useLocation, useNavigate, useParams } from 'react-router-dom'
