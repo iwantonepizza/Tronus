@@ -8,6 +8,7 @@ const completeRoundMock = vi.fn()
 const discardLastRoundMock = vi.fn()
 const recordWildlingsRaidMock = vi.fn()
 const recordClashOfKingsMock = vi.fn()
+const recordEventCardMock = vi.fn()
 
 const sessionDetail = {
   id: 999,
@@ -133,6 +134,10 @@ vi.mock('@/hooks/useSessions', () => ({
     isPending: false,
     mutateAsync: recordClashOfKingsMock,
   }),
+  useRecordEventCard: () => ({
+    isPending: false,
+    mutateAsync: recordEventCardMock,
+  }),
 }))
 
 describe('round tracker page', () => {
@@ -141,11 +146,15 @@ describe('round tracker page', () => {
     discardLastRoundMock.mockReset()
     recordWildlingsRaidMock.mockReset()
     recordClashOfKingsMock.mockReset()
+    recordEventCardMock.mockReset()
     recordWildlingsRaidMock.mockResolvedValue({
       id: 501,
     })
     recordClashOfKingsMock.mockResolvedValue({
       id: 502,
+    })
+    recordEventCardMock.mockResolvedValue({
+      id: 503,
     })
   })
 
@@ -258,5 +267,53 @@ describe('round tracker page', () => {
         /Битва королей зафиксирована в хронологии партии/i,
       ),
     ).toBeInTheDocument()
+  })
+
+  it('submits selected event cards from active decks', async () => {
+    renderWithProviders(
+      <MemoryRouter initialEntries={['/matches/999/rounds']}>
+        <Routes>
+          <Route path="/matches/:id/rounds" element={<RoundTrackerPage />} />
+        </Routes>
+      </MemoryRouter>,
+    )
+
+    expect(await screen.findByRole('heading', { level: 1 })).toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole('button', { name: 'open-event-cards' }))
+
+    const dialog = await screen.findByRole('dialog')
+    const deckOneSelect = dialog.querySelector('#event-deck-1')
+    const deckThreeSelect = dialog.querySelector('#event-deck-3')
+    expect(deckOneSelect).not.toBeNull()
+    expect(deckThreeSelect).not.toBeNull()
+
+    fireEvent.change(deckOneSelect!, {
+      target: { value: 'muster' },
+    })
+    fireEvent.change(deckThreeSelect!, {
+      target: { value: 'white_walkers' },
+    })
+
+    const submitButton = within(dialog).getAllByRole('button').at(-1)
+    expect(submitButton).toBeDefined()
+    fireEvent.click(submitButton!)
+
+    await waitFor(() => {
+      expect(recordEventCardMock).toHaveBeenCalledTimes(2)
+    })
+
+    expect(recordEventCardMock).toHaveBeenNthCalledWith(1, {
+      deck_number: 1,
+      card_slug: 'muster',
+    })
+    expect(recordEventCardMock).toHaveBeenNthCalledWith(2, {
+      deck_number: 3,
+      card_slug: 'white_walkers',
+    })
+
+    await waitFor(() => {
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+    })
   })
 })

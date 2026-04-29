@@ -1320,6 +1320,22 @@ export function RoundTrackerPage() {
               </button>
             </div>
           </div>
+          <button
+            type="button"
+            aria-label="open-event-cards"
+            onClick={() => setIsEventCardsOpen(true)}
+            className="mt-4 w-full rounded-2xl border border-border-subtle bg-bg-base px-4 py-4 text-left transition hover:border-text-secondary/40"
+          >
+            <div className="flex items-center gap-2 text-text-secondary">
+              <Zap className="h-4 w-4" />
+              <span className="text-sm font-semibold text-text-primary">
+                Карты Вестероса
+              </span>
+            </div>
+            <p className="mt-2 text-sm leading-6 text-text-secondary">
+              Выбор карт из активных колод с последовательной отправкой в хронологию.
+            </p>
+          </button>
           <div className="mt-4 rounded-2xl border border-border-subtle bg-bg-base px-4 py-3">
             <p className="text-xs font-medium uppercase tracking-widest text-text-secondary">
               Текущее давление
@@ -1639,6 +1655,17 @@ export function RoundTrackerPage() {
           onClose={() => setIsClashOpen(false)}
           onSubmit={handleClashOfKings}
           participations={participations}
+        />
+      ) : null}
+
+      {isEventCardsOpen ? (
+        <EventCardsWizard
+          key={`${session.mode.slug}-event-cards`}
+          decks={eventDecks}
+          isOpen={isEventCardsOpen}
+          isSubmitting={eventCardMutation.isPending}
+          onClose={() => setIsEventCardsOpen(false)}
+          onSubmit={handleEventCards}
         />
       ) : null}
 
