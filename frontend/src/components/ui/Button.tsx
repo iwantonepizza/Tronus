@@ -19,6 +19,7 @@ const sizeClassNames: Record<ButtonSize, string> = {
 }
 
 interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
+  fullWidth?: boolean
   iconLeft?: ReactNode
   iconRight?: ReactNode
   variant?: ButtonVariant
@@ -28,6 +29,7 @@ interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
 export function Button({
   children,
   className,
+  fullWidth = false,
   iconLeft,
   iconRight,
   size = 'md',
@@ -40,6 +42,7 @@ export function Button({
       type={type}
       className={cn(
         'inline-flex items-center justify-center gap-2 rounded-2xl font-semibold transition disabled:cursor-not-allowed disabled:opacity-55',
+        fullWidth && 'w-full',
         variantClassNames[variant],
         sizeClassNames[size],
         className,

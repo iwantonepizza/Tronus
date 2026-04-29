@@ -1,7 +1,9 @@
 import type {
   EndReason,
   FactionSlug,
+  RsvpStatus,
   SessionStatus,
+  TimelineEventKind,
   VoteType,
 } from '@/api/types'
 

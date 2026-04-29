@@ -255,7 +255,7 @@ export interface EventCardPlayedPayload {
   card_slug: string
 }
 
-
+export interface SessionListFilters {
   status?: SessionStatus
   userId?: number
   from?: string

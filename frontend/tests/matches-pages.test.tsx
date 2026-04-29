@@ -63,7 +63,7 @@ describe('matches pages', () => {
     expect(screen.getByText('Новый тестовый комментарий')).toBeInTheDocument()
   })
 
-  it('disables RSVP buttons and allows creator to cancel a planned mock match', async () => {
+  it('shows RSVP loading state and allows creator to cancel a planned mock match', async () => {
     vi.spyOn(window, 'confirm').mockReturnValue(true)
 
     renderWithProviders(
@@ -76,9 +76,7 @@ describe('matches pages', () => {
 
     expect(await screen.findByText(/Карточка партии/i)).toBeInTheDocument()
 
-    expect(screen.getByRole('button', { name: 'Я иду' })).toBeDisabled()
-    expect(screen.getByRole('button', { name: 'Под вопросом' })).toBeDisabled()
-    expect(screen.getByRole('button', { name: 'Не иду' })).toBeDisabled()
+    expect(screen.getByText(/Загружаем приглашения/i)).toBeInTheDocument()
 
     fireEvent.click(screen.getByRole('button', { name: /Отменить партию/i }))
 

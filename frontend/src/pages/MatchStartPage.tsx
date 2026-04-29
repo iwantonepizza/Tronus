@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { Dices, Loader2, Play, ShieldAlert, Shuffle, Users } from 'lucide-react'
 import { Navigate, useNavigate, useParams } from 'react-router-dom'
 import { Button } from '@/components/ui/Button'
@@ -27,20 +27,18 @@ export function MatchStartPage() {
   const randomizeMutation = useRandomizeFactions(sessionId!)
   const startMutation = useStartSession(sessionId!)
 
-  // assignment: { [userId]: factionSlug }
   const [assignment, setAssignment] = useState<Record<number, string>>({})
   const [error, setError] = useState<string | null>(null)
 
-  const goingInvites = (invitesQuery.data ?? []).filter((i) => i.rsvp_status === 'going')
-
-  // init empty assignments when invites load
-  useEffect(() => {
-    if (goingInvites.length > 0 && Object.keys(assignment).length === 0) {
-      const init: Record<number, string> = {}
-      goingInvites.forEach((inv) => { init[inv.user.id] = '' })
-      setAssignment(init)
-    }
-  }, [goingInvites.length])
+  const goingInvites = (invitesQuery.data ?? []).filter(
+    (invite) => invite.rsvp_status === 'going',
+  )
+  const resolvedAssignment =
+    Object.keys(assignment).length > 0
+      ? assignment
+      : Object.fromEntries(
+          goingInvites.map((invite) => [invite.user.id, '']),
+        )
 
   if (sessionId === null) return <Navigate replace to="/404" />
 
@@ -74,7 +72,9 @@ export function MatchStartPage() {
   }
 
   const allFactions = referenceQuery.data?.factions ?? []
-  const usedFactions = new Set(Object.values(assignment).filter(Boolean))
+  const usedFactions = new Set(
+    Object.values(resolvedAssignment).filter(Boolean),
+  )
   const availableFactions = (slug: string) =>
     allFactions.filter((f) => f.slug === slug || !usedFactions.has(f.slug))
 
@@ -83,7 +83,9 @@ export function MatchStartPage() {
     try {
       const result = await randomizeMutation.mutateAsync()
       const newAssignment: Record<number, string> = {}
-      result.forEach((r) => { newAssignment[r.user_id] = r.faction_slug })
+      result.forEach((row) => {
+        newAssignment[row.user_id] = row.faction_slug
+      })
       setAssignment(newAssignment)
     } catch {
       setError('Ошибка случайного распределения. Проверьте наличие идущих игроков.')
@@ -92,20 +94,26 @@ export function MatchStartPage() {
 
   const handleStart = async () => {
     setError(null)
-    const missing = goingInvites.filter((inv) => !assignment[inv.user.id])
+    const missing = goingInvites.filter(
+      (invite) => !resolvedAssignment[invite.user.id],
+    )
     if (missing.length > 0) {
-      setError(`Назначьте фракцию для: ${missing.map((i) => i.user.nickname).join(', ')}`)
+      setError(
+        `Назначьте фракцию для: ${missing.map((invite) => invite.user.nickname).join(', ')}`,
+      )
       return
     }
     try {
       await startMutation.mutateAsync({
-        factions_assignment: Object.entries(assignment).map(([uid, slug]) => ({
-          user_id: Number(uid),
-          faction_slug: slug,
-        })),
+        factions_assignment: Object.entries(resolvedAssignment).map(
+          ([uid, slug]) => ({
+            user_id: Number(uid),
+            faction_slug: slug,
+          }),
+        ),
       })
       navigate(`/matches/${sessionId}/rounds`, { replace: true })
-    } catch (e: unknown) {
+    } catch {
       setError('Не удалось начать партию. Проверьте приглашения и фракции.')
     }
   }
@@ -166,7 +174,7 @@ export function MatchStartPage() {
             </div>
 
             {goingInvites.map((invite) => {
-              const selected = assignment[invite.user.id] ?? ''
+              const selected = resolvedAssignment[invite.user.id] ?? ''
               const color = selected ? (FACTION_COLORS[selected] ?? '#888') : '#444'
               return (
                 <div
@@ -191,7 +199,7 @@ export function MatchStartPage() {
                     value={selected}
                     onChange={(e) =>
                       setAssignment((prev) => ({
-                        ...prev,
+                        ...(Object.keys(prev).length > 0 ? prev : resolvedAssignment),
                         [invite.user.id]: e.target.value,
                       }))
                     }
