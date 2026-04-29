@@ -4,6 +4,15 @@
 
 ## Unreleased
 
+### 2026-04-30 — Architect iteration 6 — Wave 6 closed, Wave 7 outlined
+
+- Batch-review Wave 6 (14 задач) — все приняты, 3 с комментариями.
+- **Phase 2 backend домен закрыт полностью**: lifecycle (T-100), RoundSnapshot (T-101), invitations/RSVP (T-120), random factions (T-121), replace participant (T-122), finalize redesign (T-123), wildlings/clash/event-cards timeline (T-102/103/104), match timeline endpoint + chronicler (T-126).
+- **Phase 2 frontend ядро закрыто**: RsvpBlock (F-110), MatchStartPage (F-111), RoundTrackerPage (F-112) — главный новый экран, FinalizeSessionPage redesign (F-118).
+- CR-007 закрыт через T-123.
+- Открыты CR-008 (дубль classes в models/views — T-127) и CR-009 (real Westeros card slugs, blocked owner — T-128).
+- Wave 7 выдана: оставшиеся frontend модалки (wildlings, clash, event cards, replace, fun facts), notifications, search, custom error pages, технический долг.
+
 ### 2026-04-29 — Architect iteration 5 — Wave 5 closed, Wave 6 outlined
 
 - Batch-review Wave 5 (12 задач) — все приняты, T-105 с environment-комментарием.

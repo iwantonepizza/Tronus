@@ -2,6 +2,9 @@ from __future__ import annotations
 
 import pytest
 
+from apps.games.models import GameSession
+from apps.ratings.models import MatchVote
+from apps.reference.models import Faction, GameMode, HouseDeck
 from apps.stats.selectors import player_profile_stats
 
 
@@ -47,3 +50,55 @@ def test_player_profile_stats_returns_nullables_for_user_without_completed_games
     assert stats["last10"] == []
     assert stats["crowns_received"] == 0
     assert stats["shits_received"] == 0
+
+
+@pytest.mark.django_db
+def test_player_profile_stats_ignores_cancelled_and_in_progress_sessions(
+    player_stats_dataset,
+    make_session_with_participations,
+) -> None:
+    target = player_stats_dataset["target"]
+    alpha = target.__class__.objects.get(email="alpha@example.com")
+    beta = target.__class__.objects.get(email="beta@example.com")
+    stark = Faction.objects.get(slug="stark")
+    greyjoy = Faction.objects.get(slug="greyjoy")
+    classic = GameMode.objects.get(slug="classic")
+    original = HouseDeck.objects.get(slug="original")
+
+    for status, offset, vote_type in (
+        (GameSession.Status.CANCELLED, 30, MatchVote.VoteType.CROWN),
+        (GameSession.Status.IN_PROGRESS, 31, MatchVote.VoteType.SHIT),
+    ):
+        session = make_session_with_participations(
+            status=status,
+            mode=classic,
+            house_deck=original,
+            created_by=target,
+            rows=[
+                (target, stark, 1, 7, True),
+                (
+                    alpha if status == GameSession.Status.CANCELLED else beta,
+                    greyjoy,
+                    2,
+                    5,
+                    False,
+                ),
+            ],
+            days_offset=offset,
+            planning_note=f"Non-completed stats noise: {status}",
+        )
+        MatchVote.objects.create(
+            session=session,
+            from_user=alpha if status == GameSession.Status.CANCELLED else beta,
+            to_user=target,
+            vote_type=vote_type,
+        )
+
+    stats = player_profile_stats(user_id=target.pk)
+
+    assert stats["total_games"] == 10
+    assert stats["wins"] == 5
+    assert stats["winrate"] == pytest.approx(0.5)
+    assert len(stats["last10"]) == 10
+    assert stats["crowns_received"] == 4
+    assert stats["shits_received"] == 2

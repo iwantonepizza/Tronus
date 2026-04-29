@@ -712,5 +712,45 @@ Owner и architect решают платформу. Без этого — нел
 
 - **T-082:** pytest-cov gate (closed, see DONE.md).
 - **F-016:** a11y audit (closed, see DONE.md).
-- **T-118 (NEW):** Audit для удаления `expansion_a/b` из всех тестов и фикстур после T-106.
-- **T-119 (NEW):** Stats endpoints — учитывать только `status=completed`, не `cancelled` (проверить, может уже так).
+- **T-118:** Audit для удаления `expansion_a/b` (closed, see DONE.md).
+
+### T-119: Stats endpoints учитывают только `status=completed`
+
+**Phase:** 2
+**Type:** audit / chore
+
+#### Scope
+Audit `apps/stats/selectors.py` — все агрегации фильтруют `session__status="completed"`. Сейчас может быть так, что включаются `cancelled` или (новое) `in_progress`. Тест-кейсы: cancelled session не появляется в leaderboard / overview / player profile / faction stats / head-to-head.
+
+### T-127: CR-008 — cleanup duplicate classes
+
+**Phase:** 2
+**Depends on:** Wave 6 closed
+**Type:** chore
+
+#### Scope
+См. CR-008. Удалить старые версии `MatchTimelineEvent` (apps/games/models.py) и `SessionFinalizeView` (apps/games/views.py). Без миграции (последнее определение и так действует).
+
+#### Acceptance
+- [ ] `grep -c "class MatchTimelineEvent" backend/apps/games/models.py` → 1.
+- [ ] `grep -c "class SessionFinalizeView" backend/apps/games/views.py` → 1.
+- [ ] Все тесты проходят, makemigrations dry-run чистый.
+
+### T-128: CR-009 — replace placeholder slugs with real Westeros card names
+
+**Phase:** 2
+**Status:** blocked (waits owner)
+**Depends on:** список карт от владельца
+
+#### Scope
+См. CR-009. Update `event_cards.py` со slugs из настоящей игры. Структура не меняется, миграций нет.
+
+---
+
+# 🔮 Future / парковка
+
+- Email-уведомления (T-110-future).
+- Telegram-бот для RSVP (T-111-future).
+- Экспорт истории партий (T-112-future).
+- Tournaments (T-202).
+- «Легендарные матчи» подборка (F-017).

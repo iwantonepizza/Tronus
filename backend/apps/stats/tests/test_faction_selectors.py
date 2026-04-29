@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import pytest
 
+from apps.games.models import GameSession
 from apps.stats.selectors import faction_stats, list_faction_stats
 
 
@@ -42,3 +43,35 @@ def test_list_faction_stats_includes_all_active_factions(faction_stats_dataset) 
     assert by_slug["lannister"]["total_games"] == 3
     assert by_slug["greyjoy"]["wins"] == 1
     assert by_slug["arryn"]["total_games"] == 0
+
+
+@pytest.mark.django_db
+def test_faction_stats_ignores_non_completed_sessions(
+    faction_stats_dataset,
+    make_session_with_participations,
+) -> None:
+    alpha = faction_stats_dataset["alpha"]
+    beta = faction_stats_dataset["beta"]
+
+    for status, offset in (
+        (GameSession.Status.CANCELLED, 20),
+        (GameSession.Status.IN_PROGRESS, 21),
+    ):
+        make_session_with_participations(
+            status=status,
+            mode=faction_stats_dataset["classic"],
+            house_deck=faction_stats_dataset["original"],
+            created_by=alpha,
+            rows=[
+                (alpha, faction_stats_dataset["stark"], 1, 7, True),
+                (beta, faction_stats_dataset["lannister"], 2, 5, False),
+            ],
+            days_offset=offset,
+            planning_note=f"Faction stats noise: {status}",
+        )
+
+    stats = faction_stats(faction_slug="stark")
+
+    assert stats["total_games"] == 6
+    assert stats["wins"] == 3
+    assert stats["winrate"] == pytest.approx(0.5)

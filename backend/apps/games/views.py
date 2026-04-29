@@ -23,16 +23,24 @@ from . import selectors, services
 from .permissions import IsPlayerUser, IsSessionCreatorOrAdmin
 from .serializers import (
     AddParticipantSerializer,
+    ClashOfKingsSerializer,
     CompleteRoundSerializer,
+    EventCardPlayedSerializer,
     FinalizeSessionSerializer,
+    InviteUserSerializer,
+    MatchTimelineEventSerializer,
     ParticipationSerializer,
+    ReplaceParticipantSerializer,
     RoundSnapshotSerializer,
     SessionDetailSerializer,
+    SessionInviteSerializer,
     SessionListQuerySerializer,
     SessionListSerializer,
     SessionStartSerializer,
     SessionWriteSerializer,
     UpdateParticipantSerializer,
+    UpdateRsvpSerializer,
+    WildlingsRaidSerializer,
 )
 
 
@@ -273,24 +281,6 @@ class SessionParticipantDetailView(GamesAPIView):
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
-class SessionFinalizeView(GamesAPIView):
-    permission_classes = [IsSessionCreatorOrAdmin]
-
-    def post(self, request, session_id: int, *args, **kwargs) -> Response:
-        session = get_object_or_404(selectors.get_session_queryset(), pk=session_id)
-        self.check_object_permissions(request, session)
-
-        serializer = FinalizeSessionSerializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-
-        outcome = services.finalize_session(session=session, **serializer.validated_data)
-        detailed_session = selectors.get_session_detail(session_id=outcome.session_id)
-        return Response(
-            SessionDetailSerializer(detailed_session).data,
-            status=status.HTTP_201_CREATED,
-        )
-
-
 class SessionRoundsView(GamesAPIView):
     """GET list + POST complete_round (T-101)."""
 
@@ -339,108 +329,6 @@ class SessionRoundDetailView(GamesAPIView):
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
-class SessionInvitesView(GamesAPIView):
-    """T-120: POST /sessions/<id>/invites/ (creator invites user)."""
-
-    permission_classes = [IsSessionCreatorOrAdmin]
-
-    def post(self, request, session_id: int, *args, **kwargs) -> Response:
-        from .serializers import InviteUserSerializer, SessionInviteSerializer
-        from apps.accounts.models import User
-
-        session = get_object_or_404(selectors.get_session_queryset(), pk=session_id)
-        self.check_object_permissions(request, session)
-
-        serializer = InviteUserSerializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-
-        invitee = get_object_or_404(User, pk=serializer.validated_data["user_id"], is_active=True)
-        invite = services.invite_user(session=session, inviter=request.user, invitee=invitee)
-        invite = (
-            selectors.get_invite_queryset().get(pk=invite.pk)
-        )
-        from .serializers import SessionInviteSerializer
-        return Response(SessionInviteSerializer(invite).data, status=status.HTTP_201_CREATED)
-
-
-class SessionSelfInviteView(GamesAPIView):
-    """T-120: POST /sessions/<id>/invites/me/ (player self-registers)."""
-
-    def post(self, request, session_id: int, *args, **kwargs) -> Response:
-        from rest_framework.permissions import IsAuthenticated
-        if not request.user or not request.user.is_authenticated:
-            raise PermissionDenied
-
-        session = get_object_or_404(selectors.get_session_queryset(), pk=session_id)
-        invite = services.self_invite(session=session, user=request.user)
-        invite = selectors.get_invite_queryset().get(pk=invite.pk)
-        from .serializers import SessionInviteSerializer
-        return Response(SessionInviteSerializer(invite).data, status=status.HTTP_201_CREATED)
-
-
-class SessionInviteDetailView(GamesAPIView):
-    """T-120: PATCH/DELETE /sessions/<id>/invites/<invite_id>/."""
-
-    def _get_invite(self, session_id: int, invite_id: int):
-        return get_object_or_404(
-            selectors.get_invite_queryset().filter(session_id=session_id), pk=invite_id
-        )
-
-    def patch(self, request, session_id: int, invite_id: int, *args, **kwargs) -> Response:
-        from .serializers import UpdateInviteSerializer, SessionInviteSerializer
-        from apps.reference.models import Faction
-
-        invite = self._get_invite(session_id, invite_id)
-        # Owner can update own invite; session creator/admin can update any
-        is_owner = invite.user_id == request.user.pk
-        is_admin = request.user.is_staff or invite.session.created_by_id == request.user.pk
-        if not (is_owner or is_admin):
-            raise PermissionDenied
-
-        serializer = UpdateInviteSerializer(data=request.data, partial=True)
-        serializer.is_valid(raise_exception=True)
-        vd = serializer.validated_data
-
-        kwargs_update = {}
-        if "rsvp_status" in vd:
-            kwargs_update["rsvp_status"] = vd["rsvp_status"]
-        if "desired_faction_slug" in vd:
-            slug = vd["desired_faction_slug"]
-            if slug is None:
-                kwargs_update["desired_faction"] = None
-            else:
-                faction = get_object_or_404(Faction, slug=slug)
-                kwargs_update["desired_faction"] = faction
-
-        updated = services.update_rsvp(invite=invite, **kwargs_update)
-        updated = selectors.get_invite_queryset().get(pk=updated.pk)
-        return Response(SessionInviteSerializer(updated).data)
-
-    def delete(self, request, session_id: int, invite_id: int, *args, **kwargs) -> Response:
-        invite = self._get_invite(session_id, invite_id)
-        is_owner = invite.user_id == request.user.pk
-        is_admin = request.user.is_staff or invite.session.created_by_id == request.user.pk
-        if not (is_owner or is_admin):
-            raise PermissionDenied
-        services.withdraw_invite(invite=invite)
-        return Response(status=status.HTTP_204_NO_CONTENT)
-
-
-class SessionRandomizeFactionsView(GamesAPIView):
-    """T-121: POST /sessions/<id>/randomize-factions/ — preview assignment (no save)."""
-
-    permission_classes = [IsSessionCreatorOrAdmin]
-
-    def post(self, request, session_id: int, *args, **kwargs) -> Response:
-        session = get_object_or_404(selectors.get_session_queryset(), pk=session_id)
-        self.check_object_permissions(request, session)
-        assignment = services.randomize_factions(session=session)
-        # Return as list for easy frontend consumption
-        return Response(
-            [{"user_id": uid, "faction_slug": slug} for uid, slug in assignment.items()]
-        )
-
-
 # ──────────────────────────────────────────────────────────────────────────────
 # T-120: Invitations & RSVP
 # ──────────────────────────────────────────────────────────────────────────────
@@ -455,16 +343,14 @@ class SessionInvitesView(GamesAPIView):
 
     def get(self, request, session_id: int, *args, **kwargs) -> Response:
         from .models import SessionInvite
-        from .serializers import SessionInviteSerializer
+
         session = get_object_or_404(selectors.get_session_queryset(), pk=session_id)
         invites = SessionInvite.objects.filter(session=session).select_related(
             "user__profile", "invited_by__profile", "desired_faction"
         ).order_by("created_at")
-        from .serializers import SessionInviteSerializer
         return Response(SessionInviteSerializer(invites, many=True).data)
 
     def post(self, request, session_id: int, *args, **kwargs) -> Response:
-        from .serializers import InviteUserSerializer, SessionInviteSerializer
         session = get_object_or_404(selectors.get_session_queryset(), pk=session_id)
         self.check_object_permissions(request, session)
         serializer = InviteUserSerializer(data=request.data)
@@ -484,7 +370,6 @@ class SessionSelfInviteView(GamesAPIView):
     permission_classes = [IsPlayerUser]
 
     def post(self, request, session_id: int, *args, **kwargs) -> Response:
-        from .serializers import SessionInviteSerializer
         session = get_object_or_404(selectors.get_session_queryset(), pk=session_id)
         invite = services.self_invite(session=session, user=request.user)
         invite.refresh_from_db()
@@ -499,6 +384,7 @@ class SessionInviteDetailView(GamesAPIView):
 
     def _get_invite(self, session_id: int, invite_id: int):
         from .models import SessionInvite
+
         return get_object_or_404(
             SessionInvite.objects.select_related("session", "user"),
             pk=invite_id,
@@ -506,7 +392,6 @@ class SessionInviteDetailView(GamesAPIView):
         )
 
     def patch(self, request, session_id: int, invite_id: int, *args, **kwargs) -> Response:
-        from .serializers import UpdateRsvpSerializer, SessionInviteSerializer
         invite = self._get_invite(session_id, invite_id)
 
         # Only invite owner or session creator/admin can patch
@@ -518,7 +403,10 @@ class SessionInviteDetailView(GamesAPIView):
         serializer = UpdateRsvpSerializer(data=request.data, partial=True)
         serializer.is_valid(raise_exception=True)
 
-        if "rsvp_status" in serializer.validated_data or "desired_faction" in serializer.validated_data:
+        if (
+            "rsvp_status" in serializer.validated_data
+            or "desired_faction" in serializer.validated_data
+        ):
             updated = services.update_rsvp(invite=invite, **serializer.validated_data)
         else:
             updated = invite
@@ -563,7 +451,6 @@ class SessionReplaceParticipantView(GamesAPIView):
     permission_classes = [IsSessionCreatorOrAdmin]
 
     def post(self, request, session_id: int, *args, **kwargs) -> Response:
-        from .serializers import ReplaceParticipantSerializer, ParticipationSerializer
         session = get_object_or_404(selectors.get_session_queryset(), pk=session_id)
         self.check_object_permissions(request, session)
         serializer = ReplaceParticipantSerializer(data=request.data)
@@ -583,7 +470,6 @@ class SessionFinalizeView(GamesAPIView):
     permission_classes = [IsSessionCreatorOrAdmin]
 
     def post(self, request, session_id: int, *args, **kwargs) -> Response:
-        from .serializers import FinalizeSessionSerializer
         session = get_object_or_404(selectors.get_session_queryset(), pk=session_id)
         self.check_object_permissions(request, session)
         serializer = FinalizeSessionSerializer(data=request.data)
@@ -601,7 +487,6 @@ class SessionWildlingsRaidView(GamesAPIView):
     permission_classes = [IsSessionCreatorOrAdmin]
 
     def post(self, request, session_id: int, *args, **kwargs) -> Response:
-        from .serializers import WildlingsRaidSerializer, MatchTimelineEventSerializer
         session = get_object_or_404(selectors.get_session_queryset(), pk=session_id)
         self.check_object_permissions(request, session)
         serializer = WildlingsRaidSerializer(data=request.data)
@@ -616,7 +501,6 @@ class SessionClashOfKingsView(GamesAPIView):
     permission_classes = [IsSessionCreatorOrAdmin]
 
     def post(self, request, session_id: int, *args, **kwargs) -> Response:
-        from .serializers import ClashOfKingsSerializer, MatchTimelineEventSerializer
         session = get_object_or_404(selectors.get_session_queryset(), pk=session_id)
         self.check_object_permissions(request, session)
         serializer = ClashOfKingsSerializer(data=request.data)
@@ -631,7 +515,6 @@ class SessionEventCardView(GamesAPIView):
     permission_classes = [IsSessionCreatorOrAdmin]
 
     def post(self, request, session_id: int, *args, **kwargs) -> Response:
-        from .serializers import EventCardPlayedSerializer, MatchTimelineEventSerializer
         session = get_object_or_404(selectors.get_session_queryset(), pk=session_id)
         self.check_object_permissions(request, session)
         serializer = EventCardPlayedSerializer(data=request.data)
@@ -651,7 +534,6 @@ class SessionTimelineView(GamesAPIView):
         return [AllowAny()]
 
     def get(self, request, session_id: int, *args, **kwargs) -> Response:
-        from .serializers import MatchTimelineEventSerializer
         session = get_object_or_404(selectors.get_session_queryset(), pk=session_id)
         events = selectors.get_session_timeline(session=session)
         return Response(MatchTimelineEventSerializer(events, many=True).data)

@@ -4,6 +4,65 @@
 
 ---
 
+## 2026-04-30 — Wave 6 — Phase 2 ядро (14 задач)
+
+Review: `ai-docs/reviews/2026-04-30-batch-wave6.md`. Все 14 — approved.
+
+### Frontend (Track D)
+
+### 2026-04-29 — F-118: FinalizeSessionPage redesign (CR-007)
+- agent: Claude Sonnet 4.6 — report: `ai-docs/reports/2026-04-29-frontend-wave6-complete.md` — **approved**
+
+### 2026-04-29 — F-112: RoundTrackerPage (главный новый экран)
+- agent: Claude Sonnet 4.6 — report: `ai-docs/reports/2026-04-29-frontend-wave6-complete.md` — **approved**
+
+### 2026-04-29 — F-111: MatchStartPage wizard (planned → in_progress)
+- agent: Claude Sonnet 4.6 — report: `ai-docs/reports/2026-04-29-frontend-wave6-complete.md` — **approved**
+
+### 2026-04-29 — F-110: RsvpBlock component в MatchDetailPage
+- agent: Claude Sonnet 4.6 — report: `ai-docs/reports/2026-04-29-frontend-wave6-complete.md` — **approved**
+
+### Backend Track C — Timeline events
+
+### 2026-04-29 — T-126: Match timeline endpoint + chronicler в comments (ADR-0014)
+- agent: Claude Sonnet 4.6 — report: `ai-docs/reports/2026-04-29-T-126.md` + `wave6-backend-complete.md` — **approved**
+
+### 2026-04-29 — T-104: Event card played + WESTEROS_DECKS hardcoded (ADR-0011)
+- agent: Claude Sonnet 4.6 — report: `ai-docs/reports/2026-04-29-T-104.md` — **approved_with_comments**
+- notes: WESTEROS_DECKS slugs — placeholder, нужен реальный список от владельца → CR-009
+
+### 2026-04-29 — T-103: Clash of Kings timeline event
+- agent: Claude Sonnet 4.6 — report: `ai-docs/reports/2026-04-29-T-103.md` — **approved**
+
+### 2026-04-29 — T-102: Wildlings raid timeline event
+- agent: Claude Sonnet 4.6 — report: `ai-docs/reports/2026-04-29-T-102.md` — **approved**
+
+### Backend Track B — Round system
+
+### 2026-04-29 — T-122: Replace participant
+- agent: Claude Sonnet 4.6 — report: `ai-docs/reports/2026-04-29-T-122.md` — **approved**
+
+### 2026-04-29 — T-123: Finalize redesign (CR-007 → closed)
+- agent: Claude Sonnet 4.6 — report: `ai-docs/reports/2026-04-29-T-123.md` — **approved_with_comments**
+- notes: код работает, но дубликат `class SessionFinalizeView` в views.py → CR-008
+
+### 2026-04-29 — T-101: RoundSnapshot complete_round + discard_last (ADR-0010)
+- agent: Claude Sonnet 4.6 — report: `ai-docs/reports/2026-04-29-T-101.md` — **approved**
+
+### Backend Track A — Lifecycle & Invitations
+
+### 2026-04-29 — T-121: Random faction assignment
+- agent: Claude Sonnet 4.6 — report: `ai-docs/reports/2026-04-29-T-121.md` — **approved**
+
+### 2026-04-29 — T-120: Invitations & RSVP (ADR-0013)
+- agent: Claude Sonnet 4.6 — report: `ai-docs/reports/2026-04-29-T-120.md` — **approved**
+
+### 2026-04-29 — T-100: start_session service & API (lifecycle ADR-0009)
+- agent: Claude Sonnet 4.6 — report: `ai-docs/reports/2026-04-29-T-100.md` — **approved_with_comments**
+- notes: agent создал SessionInvite + RoundSnapshot модели сразу, что технически было scope T-120 и T-101, но это разумный pragmatic decision — модели нужны для start_session integration. Принято. Дубль `MatchTimelineEvent` оставлен в models.py → CR-008.
+
+---
+
 ## 2026-04-29 — Wave 5 — Phase 2 первая партия (12 задач)
 
 Review: `ai-docs/reviews/2026-04-29-batch-wave5.md`. Все 12 — approved.

@@ -301,7 +301,9 @@ def overview_stats() -> dict[str, Any]:
     recent_matches = list(
         session_queryset.filter(status=GameSession.Status.COMPLETED)[:4]
     )
-    total_matches = GameSession.objects.count()
+    total_matches = GameSession.objects.filter(
+        status=GameSession.Status.COMPLETED
+    ).count()
     active_players = len(public_users)
 
     faction_stats_rows = [

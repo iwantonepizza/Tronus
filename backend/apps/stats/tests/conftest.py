@@ -39,6 +39,10 @@ def _ensure_reference_data() -> dict[str, object]:
         ("lannister", "Lannister", "#9B2226", "#F5E6C8"),
         ("greyjoy", "Greyjoy", "#1C3B47", "#E0E6E8"),
         ("baratheon", "Baratheon", "#F0B323", "#1A1A22"),
+        ("martell", "Martell", "#C96F2D", "#FFF0E0"),
+        ("tyrell", "Tyrell", "#2F6F4F", "#F1F6E9"),
+        ("arryn", "Arryn", "#4A6FA5", "#F4F7FB"),
+        ("targaryen", "Targaryen", "#7F1D1D", "#F9E3E3"),
     ):
         faction, _ = Faction.objects.get_or_create(
             slug=slug,
@@ -68,6 +72,40 @@ def make_user():
             password="StrongPassword123!",
             is_active=is_active,
         )
+
+    return factory
+
+
+@pytest.fixture
+def make_session_with_participations():
+    def factory(
+        *,
+        status: str,
+        mode: GameMode,
+        house_deck: HouseDeck,
+        created_by: User,
+        rows: list[tuple[User, Faction, int | None, int | None, bool]],
+        days_offset: int = 0,
+        planning_note: str = "Stats noise session",
+    ) -> GameSession:
+        session = GameSession.objects.create(
+            scheduled_at=timezone.now() - timedelta(days=days_offset),
+            mode=mode,
+            house_deck=house_deck,
+            created_by=created_by,
+            status=status,
+            planning_note=planning_note,
+        )
+        for user, faction, place, castles, is_winner in rows:
+            Participation.objects.create(
+                session=session,
+                user=user,
+                faction=faction,
+                place=place,
+                castles=castles,
+                is_winner=is_winner,
+            )
+        return session
 
     return factory
 

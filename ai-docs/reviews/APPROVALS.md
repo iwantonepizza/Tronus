@@ -4,6 +4,18 @@
 
 ---
 
+## 2026-04-30 — Wave 6 — Phase 2 ядро (14 задач)
+
+- decision: `approved` (11) и `approved_with_comments` (3: T-100, T-104, T-123)
+- reviewer: architect
+- source: `ai-docs/reviews/2026-04-30-batch-wave6.md`
+- notes: agent `Claude Sonnet 4.6` закрыл всю Wave 6: lifecycle, RoundSnapshot, invitations, random factions, replace, finalize redesign, wildlings/clash/event cards timeline, frontend round tracker. Замечания не блокирующие — все вылиты в CR-008 (cleanup) и CR-009 (real Westeros card slugs).
+- CR-007 закрыт через T-123.
+- CR-008 (cleanup duplicates в models/views) → T-127.
+- CR-009 (real Westeros card slugs, blocked owner) → T-128.
+
+---
+
 ## 2026-04-29 — Wave 5 — Phase 2 первая партия (12 задач)
 
 - decision: `approved` (11) и `approved_with_comments` (1: T-105)

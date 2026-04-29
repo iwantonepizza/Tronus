@@ -260,47 +260,6 @@ class Outcome(TimestampedModel):
 
 
 class MatchTimelineEvent(TimestampedModel):
-    """Chronological record of in-game events (ADR-0014).
-
-    Each ``kind`` has its own ``payload`` schema, validated in services.
-    """
-
-    class Kind(models.TextChoices):
-        SESSION_STARTED = "session_started", "Session started"
-        ROUND_COMPLETED = "round_completed", "Round completed"
-        WILDLINGS_RAID = "wildlings_raid", "Wildlings raid"
-        CLASH_OF_KINGS = "clash_of_kings", "Clash of kings"
-        EVENT_CARD_PLAYED = "event_card_played", "Event card played"
-        PARTICIPANT_REPLACED = "participant_replaced", "Participant replaced"
-        SESSION_FINALIZED = "session_finalized", "Session finalized"
-
-    session = models.ForeignKey(
-        "games.GameSession",
-        on_delete=models.CASCADE,
-        related_name="timeline_events",
-    )
-    kind = models.CharField(max_length=32, choices=Kind.choices)
-    happened_at = models.DateTimeField(auto_now_add=True)
-    actor = models.ForeignKey(
-        "accounts.User",
-        on_delete=models.SET_NULL,
-        null=True,
-        blank=True,
-        related_name="+",
-    )
-    payload = models.JSONField(default=dict)
-
-    class Meta:
-        ordering = ["happened_at"]
-        indexes = [
-            models.Index(fields=["session", "happened_at"]),
-        ]
-
-    def __str__(self) -> str:
-        return f"{self.kind} in session #{self.session_id}"
-
-
-class MatchTimelineEvent(TimestampedModel):
     """Chronological log of significant in-game events (ADR-0014).
 
     All event-specific data lives in ``payload`` (JSON), validated in services.py.

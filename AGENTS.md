@@ -152,42 +152,52 @@ Coder **не принимает архитектурных решений** са
 
 **Фаза:** **Phase 1 MVP — CLOSED**. Следующая — Phase 2.
 
-**Статистика выполнения (на 2026-04-29):**
+**Статистика выполнения (на 2026-04-30):**
 
 | Метрика                             | Значение |
 |-------------------------------------|----------|
-| Закрытых задач                      | 61       |
+| Закрытых задач                      | 75       |
 | Backend tests passing               | 200+     |
 | Frontend tests passing              | 15+      |
-| Backend API endpoints               | ~40 (Wave 6 расширит до ~55) |
-| Frontend pages                      | 19 (Wave 6 добавит +1: PasswordReset) |
+| Backend API endpoints               | ~55 (Wave 7 расширит до ~62) |
+| Frontend pages                      | 21 (Wave 7 добавит +4: error pages) |
 | ADR принятых                        | 15       |
-| Change requests resolved / cancelled| 6 / 1    |
-| Change requests open                | 1 (CR-007 — закроется через T-123) |
+| Change requests resolved / cancelled| 7 / 1    |
+| Change requests open                | 2 (CR-008, CR-009) |
 
-**Phase 1 — CLOSED. Phase 2 — IN PROGRESS, ~50% pre-rolled.**
+**Phase 1 — CLOSED. Phase 2 — IN PROGRESS, ~80% done.**
 
-**Что уже сделано в Phase 2 (Waves 5):**
-- ✅ Hotfixes: avatar URL (T-114), match detail bugs (F-100), mobile viewport (F-104).
-- ✅ Auth refactor: secret word + repeat password + auto-active (T-110), password reset (T-111), change password (T-112), login by email-or-nick (T-113).
-- ✅ Reference layer pivot: GameMode rules schema (T-105), House decks → 2 варианта (T-106), validate_session_setup engine (T-107), Russian validation messages (T-115).
-- ✅ Audit/cleanup: T-118 убрал остатки expansion_a/b.
+**Что сделано в Phase 2 (Waves 5+6):**
 
-**Что в Wave 6 (текущая):**
-- 🔵 Trek A — Lifecycle & Invitations: T-100 (start_session), T-120 (Invitations & RSVP), T-121 (random factions).
-- 🟣 Trek B — Round system: T-101 (RoundSnapshot), T-123 (finalize redesign), T-122 (replace participant).
-- 🟠 Trek C — Timeline events: T-102 (wildlings raid), T-103 (clash of kings), T-104 (event cards), T-126 (timeline endpoint).
-- 🟢 Trek D — Frontend: F-110 (RSVP), F-111 (start wizard), F-112 (round tracker UI — главный экран!), F-118 (finalize confirmation UI).
+✅ **Wave 5 — auth/hotfix/rules pivot:**
+- Hotfixes: avatar URL, mobile viewport, RSVP кнопки исправлены.
+- Auth: secret word + login email/nick + password reset/change.
+- Reference layer: GameMode rules, House decks → 2 варианта, validate_session_setup engine, русские validation messages.
 
-**Что в Wave 7 (после Wave 6):**
-- Frontend для timeline/wildlings/clash/event cards (F-113..F-117, F-119).
-- Notifications subsystem (T-130 + F-101).
-- Search (T-131 + F-102).
-- Fun facts (T-132 + F-119).
-- Russian translation pass (F-105) — большая отдельная итерация.
-- Custom error pages (F-106).
+✅ **Wave 6 — Phase 2 ядро:**
+- Lifecycle расширен: `planned → in_progress → completed` (T-100, ADR-0009).
+- RoundSnapshot модель — immutable snapshot треков партии (T-101, ADR-0010).
+- Invitations & RSVP — отдельная модель `SessionInvite` (T-120, ADR-0013).
+- Random faction assignment, replace participant.
+- Finalize redesign — победитель из последнего snapshot (T-123, CR-007 closed).
+- Timeline events: wildlings raid, clash of kings, event cards, chronicler в comments (T-102/103/104/126, ADR-0014).
+- Frontend: RsvpBlock (F-110), MatchStartPage (F-111), **RoundTrackerPage** (F-112 — главный новый экран), FinalizeSessionPage redesign (F-118).
 
-**Production:** `I-005..I-009` ждут решения владельца по платформе.
+**Что в Wave 7 (текущая, 16 задач, выдана 2026-04-30):**
+- 🟠 Action modals: F-113 (wildlings UI), F-114 (clash UI), F-115 (event cards UI), F-117 (replace UI).
+- 🟡 Timeline UI: F-116 (timeline component + chronicler hide), F-108 (settings toggle).
+- 🔔 Notifications: T-130 (backend), F-101 (dropdown).
+- 🔍 Search: T-131 (API), F-102 (Cmd+K palette).
+- 🎉 Polish: T-132 + F-119 (fun facts), F-105 (russian translation pass — большая), F-106 (error pages).
+- 🧹 Tech debt: T-127 (CR-008 cleanup), T-119 (stats audit).
+
+**После Wave 7 — Phase 2 закрыта полностью.**
+
+**Blocked / waiting owner:**
+- CR-009 / T-128 — реальные slugs Westeros карт (placeholder сейчас).
+- I-005..I-009 — Production deployment, выбор платформы.
+
+**Phase 3 (Gamification)** — Seasons, Achievements, Tournaments — ждёт стабилизации Phase 2 в production.
 
 ---
 
