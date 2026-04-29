@@ -1,7 +1,11 @@
 import { api, resolveAssetUrl } from '@/api/client'
 import type {
+  ChangePasswordPayload,
+  ChangePasswordResponse,
   CsrfResponse,
   LoginPayload,
+  PasswordResetPayload,
+  PasswordResetResponse,
   PrivateUser,
   RegisterPayload,
   RegisterResponse,
@@ -30,6 +34,24 @@ export function login(payload: LoginPayload): Promise<PrivateUser> {
     method: 'POST',
     json: payload,
   }).then(normalizePrivateUser)
+}
+
+export function resetPassword(
+  payload: PasswordResetPayload,
+): Promise<PasswordResetResponse> {
+  return api<PasswordResetResponse>('/auth/password/reset/', {
+    method: 'POST',
+    json: payload,
+  })
+}
+
+export function changePassword(
+  payload: ChangePasswordPayload,
+): Promise<ChangePasswordResponse> {
+  return api<ChangePasswordResponse>('/auth/password/change/', {
+    method: 'POST',
+    json: payload,
+  })
 }
 
 export function logout(): Promise<void> {

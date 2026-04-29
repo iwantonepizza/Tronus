@@ -11,8 +11,6 @@ asgiref==3.10.0
 colorama==0.4.6
     # via pytest
 django==5.0.2
-gunicorn==22.0.0
-    # via -r requirements.in
     # via
     #   -r requirements.in
     #   django-cors-headers

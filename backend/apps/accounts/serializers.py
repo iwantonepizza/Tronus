@@ -7,15 +7,47 @@ from apps.reference.models import Faction
 from .models import User
 
 
+def _build_absolute_media_url(*, serializer: serializers.BaseSerializer, path: str) -> str:
+    request = serializer.context.get("request")
+    if request is None:
+        return path
+    return request.build_absolute_uri(path)
+
+
 class RegisterSerializer(serializers.Serializer):
     email = serializers.EmailField()
     password = serializers.CharField(write_only=True, trim_whitespace=False)
+    password_repeat = serializers.CharField(write_only=True, trim_whitespace=False)
     nickname = serializers.CharField(max_length=64)
+    secret_word = serializers.CharField(
+        required=False,
+        allow_blank=True,
+        write_only=True,
+        trim_whitespace=False,
+    )
+
+    def validate(self, attrs: dict[str, str]) -> dict[str, str]:
+        if attrs["password"] != attrs["password_repeat"]:
+            raise serializers.ValidationError({"password_repeat": ["Пароли не совпадают."]})
+        return attrs
 
 
 class LoginSerializer(serializers.Serializer):
-    email = serializers.EmailField()
+    login = serializers.CharField(max_length=254)
     password = serializers.CharField(write_only=True, trim_whitespace=False)
+
+
+class PasswordResetSerializer(serializers.Serializer):
+    login = serializers.CharField(max_length=254)
+    secret_word = serializers.CharField(trim_whitespace=False)
+    new_password = serializers.CharField(write_only=True, trim_whitespace=False)
+    new_password_repeat = serializers.CharField(write_only=True, trim_whitespace=False)
+
+
+class PasswordChangeSerializer(serializers.Serializer):
+    current_password = serializers.CharField(write_only=True, trim_whitespace=False)
+    new_password = serializers.CharField(write_only=True, trim_whitespace=False)
+    new_password_repeat = serializers.CharField(write_only=True, trim_whitespace=False)
 
 
 class PublicUserSerializer(serializers.ModelSerializer):
@@ -35,7 +67,7 @@ class PublicUserSerializer(serializers.ModelSerializer):
         avatar = getattr(obj.profile, "current_avatar", None)
         if avatar is None or not avatar.generated_image:
             return None
-        return avatar.generated_image.url
+        return _build_absolute_media_url(serializer=self, path=avatar.generated_image.url)
 
 
 class PrivateUserSerializer(PublicUserSerializer):

@@ -7,7 +7,7 @@ from django.utils import timezone
 
 from apps.accounts.models import User
 from apps.games.models import GameSession, Outcome, Participation
-from apps.reference.models import Deck, Faction, GameMode
+from apps.reference.models import Faction, GameMode, HouseDeck
 
 
 def _ensure_reference_data() -> dict[str, object]:
@@ -19,7 +19,7 @@ def _ensure_reference_data() -> dict[str, object]:
             "max_players": 8,
         },
     )
-    original, _ = Deck.objects.get_or_create(
+    original, _ = HouseDeck.objects.get_or_create(
         slug="original",
         defaults={"name": "Original"},
     )
@@ -69,7 +69,7 @@ def make_completed_session():
         session = GameSession.objects.create(
             scheduled_at=timezone.now() - timedelta(days=1),
             mode=reference["classic"],
-            deck=reference["original"],
+            house_deck=reference["original"],
             created_by=created_by,
             status=GameSession.Status.COMPLETED,
         )

@@ -30,10 +30,15 @@ export interface GameMode {
   name: string
   min_players: number
   max_players: number
+  max_rounds: number
+  westeros_deck_count: number
+  allowed_factions: FactionSlug[]
+  required_factions: FactionSlug[]
+  factions_by_player_count: Record<string, FactionSlug[]>
   description?: string
 }
 
-export interface Deck {
+export interface HouseDeck {
   slug: string
   name: string
   description?: string
@@ -63,24 +68,59 @@ export interface UpdateProfilePayload {
 export interface RegisterPayload {
   email: string
   password: string
+  password_repeat: string
   nickname: string
+  secret_word?: string
 }
 
 export interface RegisterResponse {
   id: number
-  status: 'pending_approval'
+  status: 'pending_approval' | 'active'
+  auto_activated: boolean
 }
 
 export interface LoginPayload {
-  email: string
+  login: string
   password: string
+}
+
+export interface PasswordResetPayload {
+  login: string
+  secret_word: string
+  new_password: string
+  new_password_repeat: string
+}
+
+export interface PasswordResetResponse {
+  status: 'password_reset'
+}
+
+export interface ChangePasswordPayload {
+  current_password: string
+  new_password: string
+  new_password_repeat: string
+}
+
+export interface ChangePasswordResponse {
+  status: 'password_changed'
 }
 
 export interface CsrfResponse {
   detail: string
 }
 
-export type SessionStatus = 'planned' | 'completed' | 'cancelled'
+export type SessionStatus = 'planned' | 'in_progress' | 'completed' | 'cancelled'
+
+export type RsvpStatus = 'going' | 'maybe' | 'declined' | 'invited'
+
+export type TimelineEventKind =
+  | 'session_started'
+  | 'round_completed'
+  | 'wildlings_raid'
+  | 'clash_of_kings'
+  | 'event_card_played'
+  | 'participant_replaced'
+  | 'session_finalized'
 
 export type EndReason =
   | 'castles_7'
@@ -132,7 +172,90 @@ export interface ApiSessionDetail extends ApiSessionListItem {
   outcome: ApiOutcome | null
 }
 
-export interface SessionListFilters {
+// Wave 6 types
+export interface ApiSessionInvite {
+  id: number
+  user: ApiUserSummary
+  rsvp_status: RsvpStatus
+  desired_faction: string | null
+  invited_by: ApiUserSummary | null
+  created_at: string
+}
+
+export interface ApiRoundSnapshot {
+  id: number
+  round_number: number
+  influence_throne: number[]
+  influence_sword: number[]
+  influence_court: number[]
+  supply: Record<string, number>
+  castles: Record<string, number>
+  wildlings_threat: 0 | 2 | 4 | 6 | 8 | 10 | 12
+  note: string
+  created_at: string
+}
+
+export interface ApiTimelineEvent {
+  id: number
+  kind: TimelineEventKind
+  happened_at: string
+  actor: ApiUserSummary | null
+  payload: Record<string, unknown>
+  created_at: string
+}
+
+export interface StartSessionPayload {
+  factions_assignment: { user_id: number; faction_slug: string }[]
+}
+
+export interface FinalizeSessionPayload {
+  mvp?: number | null
+  final_note?: string
+}
+
+export interface InviteUserPayload {
+  user_id: number
+}
+
+export interface UpdateRsvpPayload {
+  rsvp_status?: RsvpStatus
+  desired_faction?: string | null
+}
+
+export interface ReplaceParticipantPayload {
+  out_user_id: number
+  in_user_id: number
+}
+
+export interface CompleteRoundPayload {
+  influence_throne: number[]
+  influence_sword: number[]
+  influence_court: number[]
+  supply: Record<string, number>
+  castles: Record<string, number>
+  wildlings_threat: number
+  note?: string
+}
+
+export interface WildlingsRaidPayload {
+  bids: { participation_id: number; amount: number }[]
+  outcome: 'win' | 'loss'
+  outcome_card_slug: string | null
+  wildlings_threat_after: number
+}
+
+export interface ClashOfKingsPayload {
+  influence_throne: { participation_id: number; bid: number; place: number }[]
+  influence_sword: { participation_id: number; bid: number; place: number }[]
+  influence_court: { participation_id: number; bid: number; place: number }[]
+}
+
+export interface EventCardPlayedPayload {
+  deck_number: number
+  card_slug: string
+}
+
+
   status?: SessionStatus
   userId?: number
   from?: string
@@ -164,18 +287,11 @@ export interface UpdateParticipantPayload {
   notes?: string
 }
 
+// Legacy payload kept for backward compat with old code paths
 export interface FinalizeParticipationPayload {
   id: number
   place: number
   castles: number
-}
-
-export interface FinalizeSessionPayload {
-  rounds_played: number
-  end_reason: EndReason
-  mvp?: number | null
-  final_note?: string
-  participations: FinalizeParticipationPayload[]
 }
 
 export interface ApiComment {
@@ -236,7 +352,7 @@ export interface ApiStatsSession {
   scheduled_at: string
   status: SessionStatus
   mode: GameMode
-  deck: Deck
+  deck: HouseDeck
   created_by: PublicUser
   planning_note: string
   participations: ApiStatsParticipation[]
@@ -313,7 +429,7 @@ export interface ApiHeadToHeadMatch {
   id: number
   scheduled_at: string
   mode: GameMode
-  deck: Deck
+  deck: HouseDeck
   user_a: ApiHeadToHeadSide
   user_b: ApiHeadToHeadSide
 }

@@ -1,4 +1,3 @@
-import type { ReactNode } from 'react'
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -25,11 +24,11 @@ function createDeferred<T>() {
   return { promise, resolve, reject }
 }
 
-function renderWithRouter(element: ReactNode) {
+function renderWithRouter(initialEntry = '/login') {
   render(
-    <MemoryRouter initialEntries={['/login']}>
+    <MemoryRouter initialEntries={[initialEntry]}>
       <Routes>
-        <Route path="/login" element={element} />
+        <Route path="/login" element={<LoginPage />} />
         <Route path="/register" element={<RegisterPage />} />
         <Route path="/me" element={<div>Protected page</div>} />
       </Routes>
@@ -51,20 +50,15 @@ describe('auth pages', () => {
     })
   })
 
-  it('validates login email before submit', async () => {
-    renderWithRouter(<LoginPage />)
+  it('validates login field before submit', async () => {
+    renderWithRouter('/login')
 
-    fireEvent.change(screen.getByLabelText('Email'), {
-      target: { value: 'not-an-email' },
-    })
     fireEvent.change(screen.getByLabelText('Пароль'), {
       target: { value: 'StrongPassword123!' },
     })
     fireEvent.click(screen.getByRole('button', { name: 'Войти' }))
 
-    expect(
-      await screen.findByText('Введите корректный email.'),
-    ).toBeInTheDocument()
+    expect(await screen.findByText('Введите email или ник.')).toBeInTheDocument()
   })
 
   it('disables login button while request is in flight', async () => {
@@ -91,10 +85,10 @@ describe('auth pages', () => {
       refreshUser: vi.fn(),
     })
 
-    renderWithRouter(<LoginPage />)
+    renderWithRouter('/login')
 
-    fireEvent.change(screen.getByLabelText('Email'), {
-      target: { value: 'friend@example.com' },
+    fireEvent.change(screen.getByLabelText('Почта или ник'), {
+      target: { value: 'ironfist' },
     })
     fireEvent.change(screen.getByLabelText('Пароль'), {
       target: { value: 'StrongPassword123!' },
@@ -103,6 +97,13 @@ describe('auth pages', () => {
 
     await waitFor(() => {
       expect(screen.getByRole('button', { name: 'Входим…' })).toBeDisabled()
+    })
+
+    await waitFor(() => {
+      expect(loginMock).toHaveBeenCalledWith({
+        login: 'ironfist',
+        password: 'StrongPassword123!',
+      })
     })
 
     deferred.resolve({
@@ -137,9 +138,9 @@ describe('auth pages', () => {
       refreshUser: vi.fn(),
     })
 
-    renderWithRouter(<LoginPage />)
+    renderWithRouter('/login')
 
-    fireEvent.change(screen.getByLabelText('Email'), {
+    fireEvent.change(screen.getByLabelText('Почта или ник'), {
       target: { value: 'pending@example.com' },
     })
     fireEvent.change(screen.getByLabelText('Пароль'), {
@@ -149,8 +150,109 @@ describe('auth pages', () => {
 
     expect(
       await screen.findByText(
-        'Аккаунт создан, но ещё ждёт подтверждения owner.',
+        'Аккаунт создан, но ещё ждёт подтверждения владельца.',
       ),
     ).toBeInTheDocument()
+  })
+
+  it('shows pending approval state after regular registration', async () => {
+    const registerMock = vi.fn(async () => ({
+      id: 1,
+      status: 'pending_approval' as const,
+      auto_activated: false,
+    }))
+
+    mockedUseAuth.mockReturnValue({
+      user: null,
+      isAuthenticated: false,
+      isBootstrapping: false,
+      login: vi.fn(),
+      logout: vi.fn(),
+      register: registerMock,
+      refreshUser: vi.fn(),
+    })
+
+    renderWithRouter('/register')
+
+    fireEvent.change(screen.getByLabelText('Почта'), {
+      target: { value: 'friend@example.com' },
+    })
+    fireEvent.change(screen.getByLabelText('Ник'), {
+      target: { value: 'IronFist' },
+    })
+    fireEvent.change(screen.getByLabelText('Пароль'), {
+      target: { value: 'StrongPassword123!' },
+    })
+    fireEvent.change(screen.getByLabelText('Повтор пароля'), {
+      target: { value: 'StrongPassword123!' },
+    })
+    fireEvent.click(screen.getByRole('button', { name: 'Создать заявку' }))
+
+    expect(
+      await screen.findByText(
+        'Заявка отправлена. Теперь дождитесь подтверждения владельца и затем войдите.',
+      ),
+    ).toBeInTheDocument()
+  })
+
+  it('redirects to login after auto-activated registration', async () => {
+    const registerMock = vi.fn(async () => ({
+      id: 1,
+      status: 'active' as const,
+      auto_activated: true,
+    }))
+
+    mockedUseAuth.mockReturnValue({
+      user: null,
+      isAuthenticated: false,
+      isBootstrapping: false,
+      login: vi.fn(),
+      logout: vi.fn(),
+      register: registerMock,
+      refreshUser: vi.fn(),
+    })
+
+    renderWithRouter('/register')
+
+    fireEvent.change(screen.getByLabelText('Почта'), {
+      target: { value: 'friend@example.com' },
+    })
+    fireEvent.change(screen.getByLabelText('Ник'), {
+      target: { value: 'IronFist' },
+    })
+    fireEvent.change(screen.getByLabelText('Пароль'), {
+      target: { value: 'StrongPassword123!' },
+    })
+    fireEvent.change(screen.getByLabelText('Повтор пароля'), {
+      target: { value: 'StrongPassword123!' },
+    })
+    fireEvent.change(screen.getByLabelText('Секретное слово'), {
+      target: { value: 'lovecraft' },
+    })
+    fireEvent.click(screen.getByRole('button', { name: 'Создать заявку' }))
+
+    await waitFor(() => {
+      expect(screen.getByText('Вход в Tronus')).toBeInTheDocument()
+    })
+  })
+
+  it('validates password repeat on register page', async () => {
+    renderWithRouter('/register')
+
+    fireEvent.change(screen.getByLabelText('Почта'), {
+      target: { value: 'friend@example.com' },
+    })
+    fireEvent.change(screen.getByLabelText('Ник'), {
+      target: { value: 'IronFist' },
+    })
+    fireEvent.change(screen.getByLabelText('Пароль'), {
+      target: { value: 'StrongPassword123!' },
+    })
+    fireEvent.change(screen.getByLabelText('Повтор пароля'), {
+      target: { value: 'WrongPassword123!' },
+    })
+    fireEvent.click(screen.getByRole('button', { name: 'Создать заявку' }))
+
+    expect(await screen.findByText('Пароли не совпадают.')).toBeInTheDocument()
   })
 })

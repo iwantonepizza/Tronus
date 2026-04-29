@@ -20,7 +20,7 @@ export function Modal({ children, isOpen, onClose, title }: ModalProps) {
         type="button"
         className="absolute inset-0 bg-black/70 backdrop-blur-sm"
         onClick={onClose}
-        aria-label="Close modal overlay"
+        aria-label="Закрыть оверлей"
       />
       <section
         className={cn(
@@ -33,7 +33,7 @@ export function Modal({ children, isOpen, onClose, title }: ModalProps) {
         <div className="flex items-start justify-between gap-4">
           <div>
             <p className="font-mono text-xs uppercase tracking-[0.24em] text-gold/80">
-              Confirm Dialog
+              Подтверждение
             </p>
             <h2 className="mt-3 font-display text-3xl text-text-primary">
               {title}
@@ -43,7 +43,7 @@ export function Modal({ children, isOpen, onClose, title }: ModalProps) {
             type="button"
             onClick={onClose}
             className="inline-flex h-10 w-10 items-center justify-center rounded-2xl border border-border-subtle text-text-secondary transition hover:border-gold hover:text-gold"
-            aria-label="Close modal"
+            aria-label="Закрыть окно"
           >
             <X className="h-4 w-4" />
           </button>

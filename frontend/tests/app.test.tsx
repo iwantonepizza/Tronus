@@ -79,12 +79,16 @@ describe('App', () => {
           throw new Error('Not implemented in this test.')
         },
         logout: async () => {},
-        register: async () => ({ id: 1, status: 'pending_approval' }),
+        register: async () => ({
+          id: 1,
+          status: 'pending_approval',
+          auto_activated: false,
+        }),
         refreshUser: async () => null,
       },
     })
 
-    expect(await screen.findByText('Hello Tronus')).toBeInTheDocument()
+    expect(await screen.findByText('Tronus сегодня')).toBeInTheDocument()
     expect((await screen.findAllByText(/Ближайшая партия/i)).length).toBeGreaterThan(0)
   })
 })

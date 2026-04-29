@@ -38,7 +38,7 @@ export function Toast({ message, onClose, type, visible }: ToastProps) {
             type="button"
             className="inline-flex h-8 w-8 items-center justify-center rounded-full text-current/80 transition hover:bg-white/10 hover:text-current"
             onClick={onClose}
-            aria-label="Close toast"
+            aria-label="Закрыть уведомление"
           >
             <X className="h-4 w-4" />
           </button>

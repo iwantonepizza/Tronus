@@ -1,4 +1,3 @@
-import { MotionConfig } from 'framer-motion'
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
 import { RequireAuth } from '@/components/auth/RequireAuth'
 import { AppShell } from '@/components/layout/AppShell'
@@ -13,20 +12,23 @@ import { HomePage } from '@/pages/HomePage'
 import { LeaderboardPage } from '@/pages/LeaderboardPage'
 import { LoginPage } from '@/pages/LoginPage'
 import { MatchDetailPage } from '@/pages/MatchDetailPage'
+import { MatchStartPage } from '@/pages/MatchStartPage'
 import { MatchesPage } from '@/pages/MatchesPage'
 import { MyProfilePage } from '@/pages/MyProfilePage'
 import { NotFoundPage } from '@/pages/NotFoundPage'
+import { PasswordResetPage } from '@/pages/PasswordResetPage'
 import { PlayerProfilePage } from '@/pages/PlayerProfilePage'
 import { PlayersPage } from '@/pages/PlayersPage'
 import { RegisterPage } from '@/pages/RegisterPage'
+import { RoundTrackerPage } from '@/pages/RoundTrackerPage'
 
 function App() {
   return (
-    <MotionConfig reducedMotion="user">
-      <BrowserRouter>
+    <BrowserRouter>
       <Routes>
         <Route path="/login" element={<LoginPage />} />
         <Route path="/register" element={<RegisterPage />} />
+        <Route path="/password-reset" element={<PasswordResetPage />} />
 
         <Route element={<AppShell />}>
           <Route path="/" element={<HomePage />} />
@@ -44,6 +46,8 @@ function App() {
             <Route path="/me/avatar" element={<AvatarGeneratorPage />} />
             <Route path="/matches/new" element={<CreateSessionPage />} />
             <Route path="/matches/:id/edit" element={<EditSessionPage />} />
+            <Route path="/matches/:id/start" element={<MatchStartPage />} />
+            <Route path="/matches/:id/rounds" element={<RoundTrackerPage />} />
             <Route
               path="/matches/:id/finalize"
               element={<FinalizeSessionPage />}
@@ -55,7 +59,6 @@ function App() {
         <Route path="*" element={<Navigate to="/404" replace />} />
       </Routes>
     </BrowserRouter>
-    </MotionConfig>
   )
 }
 

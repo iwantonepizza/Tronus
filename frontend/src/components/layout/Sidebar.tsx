@@ -8,7 +8,7 @@ export function Sidebar() {
   const CreateIcon = QUICK_CREATE.icon
 
   return (
-    <aside className="sticky top-16 hidden h-[calc(100vh-4rem)] w-60 flex-col border-r border-border-subtle bg-bg-base lg:flex">
+    <aside className="sticky top-16 hidden h-[calc(100dvh-4rem)] w-60 flex-col border-r border-border-subtle bg-bg-base lg:flex">
       <nav className="flex-1 space-y-1 overflow-y-auto px-3 py-5">
         {PRIMARY_NAV_ITEMS.map((item) => {
           const ItemIcon = item.icon

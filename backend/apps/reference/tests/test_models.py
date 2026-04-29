@@ -4,7 +4,7 @@ import pytest
 from django.core.exceptions import ValidationError
 from django.db import IntegrityError
 
-from apps.reference.models import Deck, Faction, GameMode
+from apps.reference.models import Faction, GameMode, HouseDeck
 
 EXPECTED_FACTION_SLUGS = {
     "arryn",
@@ -16,8 +16,13 @@ EXPECTED_FACTION_SLUGS = {
     "targaryen",
     "tyrell",
 }
-EXPECTED_GAME_MODE_SLUGS = {"alternative", "classic", "dragons", "quests"}
-EXPECTED_DECK_SLUGS = {"expansion_a", "expansion_b", "original"}
+EXPECTED_GAME_MODE_SLUGS = {
+    "classic",
+    "dance_with_dragons",
+    "feast_for_crows",
+    "mother_of_dragons",
+}
+EXPECTED_DECK_SLUGS = {"alternative", "original"}
 EXPECTED_FACTION_COLORS = {
     "arryn": ("#8AAFC8", "#1A2A3A"),
     "baratheon": ("#F0B323", "#1A1A22"),
@@ -52,11 +57,11 @@ def _ensure_reference_seed_data() -> None:
             },
         )
 
-    for slug, name, min_players, max_players in (
-        ("alternative", "Alternative", 4, 4),
-        ("classic", "Classic", 3, 6),
-        ("dragons", "Dragons", 4, 8),
-        ("quests", "Quests", 4, 4),
+    for slug, name, min_players, max_players, max_rounds, deck_count, required in (
+        ("classic", "Classic", 3, 6, 10, 3, []),
+        ("dance_with_dragons", "Dance with Dragons", 6, 6, 10, 3, []),
+        ("feast_for_crows", "Feast for Crows", 4, 4, 7, 3, []),
+        ("mother_of_dragons", "Mother of Dragons", 4, 8, 10, 4, ["targaryen"]),
     ):
         GameMode.objects.get_or_create(
             slug=slug,
@@ -64,15 +69,17 @@ def _ensure_reference_seed_data() -> None:
                 "name": name,
                 "min_players": min_players,
                 "max_players": max_players,
+                "max_rounds": max_rounds,
+                "westeros_deck_count": deck_count,
+                "required_factions": required,
             },
         )
 
     for slug, name in (
-        ("expansion_a", "Expansion A"),
-        ("expansion_b", "Expansion B"),
+        ("alternative", "Alternative"),
         ("original", "Original"),
     ):
-        Deck.objects.get_or_create(slug=slug, defaults={"name": name})
+        HouseDeck.objects.get_or_create(slug=slug, defaults={"name": name})
 
 
 @pytest.mark.django_db
@@ -88,8 +95,8 @@ def test_faction_str_returns_name() -> None:
 
 
 @pytest.mark.django_db
-def test_deck_str_returns_name() -> None:
-    deck = Deck.objects.create(
+def test_house_deck_str_returns_name() -> None:
+    deck = HouseDeck.objects.create(
         slug="custom-original",
         name="Оригинальная",
     )
@@ -140,11 +147,16 @@ def test_reference_seed_data_is_loaded() -> None:
 
     assert set(Faction.objects.values_list("slug", flat=True)) == EXPECTED_FACTION_SLUGS
     assert set(GameMode.objects.values_list("slug", flat=True)) == EXPECTED_GAME_MODE_SLUGS
-    assert set(Deck.objects.values_list("slug", flat=True)) == EXPECTED_DECK_SLUGS
+    assert set(HouseDeck.objects.values_list("slug", flat=True)) == EXPECTED_DECK_SLUGS
 
     assert Faction.objects.filter(slug="stark", is_active=True).exists()
     assert GameMode.objects.filter(slug="classic", min_players=3, max_players=6).exists()
-    assert Deck.objects.filter(slug="original").exists()
+    assert GameMode.objects.filter(
+        slug="mother_of_dragons",
+        required_factions=["targaryen"],
+        westeros_deck_count=4,
+    ).exists()
+    assert HouseDeck.objects.filter(slug="original").exists()
 
     faction_colors = {
         row["slug"]: (row["color"], row["on_primary"])

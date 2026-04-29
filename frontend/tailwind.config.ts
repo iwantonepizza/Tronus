@@ -36,7 +36,8 @@ export default {
         },
       },
       fontFamily: {
-        display: ['Cinzel', 'serif'],
+        brand: ['Cinzel', 'serif'],
+        display: ['Spectral', 'serif'],
         body: ['Inter', 'sans-serif'],
         mono: ['JetBrains Mono', 'monospace'],
       },

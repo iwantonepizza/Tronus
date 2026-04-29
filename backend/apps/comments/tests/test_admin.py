@@ -8,7 +8,7 @@ from apps.accounts.models import User
 from apps.comments.admin import MatchCommentAdmin
 from apps.comments.models import MatchComment
 from apps.games.models import GameSession
-from apps.reference.models import Deck, GameMode
+from apps.reference.models import GameMode, HouseDeck
 
 
 def _build_admin_request() -> object:
@@ -24,11 +24,11 @@ def _make_session(*, user: User) -> GameSession:
         slug="classic",
         defaults={"name": "Classic", "min_players": 3, "max_players": 8},
     )
-    deck, _ = Deck.objects.get_or_create(slug="original", defaults={"name": "Original"})
+    deck, _ = HouseDeck.objects.get_or_create(slug="original", defaults={"name": "Original"})
     return GameSession.objects.create(
         scheduled_at="2026-05-01T18:00:00Z",
         mode=mode,
-        deck=deck,
+        house_deck=deck,
         created_by=user,
     )
 

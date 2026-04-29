@@ -18,12 +18,20 @@ from . import selectors
 from .permissions import IsAuthenticatedUser, IsSelfUser
 from .serializers import (
     LoginSerializer,
+    PasswordChangeSerializer,
+    PasswordResetSerializer,
     PrivateUserSerializer,
     PublicUserSerializer,
     RegisterSerializer,
     UpdateProfileSerializer,
 )
-from .services import register_user, update_profile
+from .services import (
+    change_password,
+    find_user_by_login,
+    register_user,
+    reset_password,
+    update_profile,
+)
 
 REGISTER_RATE_GROUP = "auth-register"
 LOGIN_RATE_GROUP = "auth-login"
@@ -66,7 +74,7 @@ def check_rate_limit(
     if usage and usage["should_limit"]:
         return build_error_response(
             code="rate_limited",
-            message="Too many requests.",
+            message="Слишком много запросов.",
             status_code=status.HTTP_429_TOO_MANY_REQUESTS,
         )
 
@@ -83,19 +91,33 @@ class RegisterView(APIView):
 
         serializer = RegisterSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
+        validated_data = serializer.validated_data
 
         try:
-            user = register_user(**serializer.validated_data)
+            registration_result = register_user(
+                email=validated_data["email"],
+                password=validated_data["password"],
+                nickname=validated_data["nickname"],
+                secret_word=validated_data.get("secret_word"),
+            )
         except ValidationError as exc:
             return build_error_response(
                 code="validation_error",
-                message="Validation error.",
+                message="Ошибка валидации.",
                 status_code=status.HTTP_400_BAD_REQUEST,
                 details=exc.message_dict,
             )
 
+        user = registration_result["user"]
+        response_status = (
+            "active" if registration_result["auto_activated"] else "pending_approval"
+        )
         return Response(
-            {"id": user.pk, "status": "pending_approval"},
+            {
+                "id": user.pk,
+                "status": response_status,
+                "auto_activated": registration_result["auto_activated"],
+            },
             status=status.HTTP_201_CREATED,
         )
 
@@ -119,28 +141,28 @@ class LoginView(APIView):
         serializer = LoginSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
-        email = serializer.validated_data["email"]
+        login_value = serializer.validated_data["login"]
         password = serializer.validated_data["password"]
-        user = self._find_user_by_email(email=email)
+        user = find_user_by_login(login=login_value)
 
         if user is None:
             return build_error_response(
                 code="invalid_credentials",
-                message="Invalid email or password.",
+                message="Неверный логин или пароль.",
                 status_code=status.HTTP_400_BAD_REQUEST,
             )
 
         if not user.check_password(password):
             return build_error_response(
                 code="invalid_credentials",
-                message="Invalid email or password.",
+                message="Неверный логин или пароль.",
                 status_code=status.HTTP_400_BAD_REQUEST,
             )
 
         if not user.is_active:
             return build_error_response(
                 code="account_pending_approval",
-                message="This account is pending owner approval.",
+                message="Этот аккаунт ожидает подтверждения владельцем.",
                 status_code=status.HTTP_403_FORBIDDEN,
             )
 
@@ -152,16 +174,57 @@ class LoginView(APIView):
         if authenticated_user is None:
             return build_error_response(
                 code="invalid_credentials",
-                message="Invalid email or password.",
+                message="Неверный логин или пароль.",
                 status_code=status.HTTP_400_BAD_REQUEST,
             )
 
         login(request, authenticated_user)
-        return Response(PrivateUserSerializer(authenticated_user).data)
+        return Response(
+            PrivateUserSerializer(
+                authenticated_user,
+                context={"request": request},
+            ).data
+        )
 
-    @staticmethod
-    def _find_user_by_email(*, email: str):
-        return selectors.get_user_by_email(email=email)
+
+class PasswordResetView(APIView):
+    permission_classes = [AllowAny]
+
+    def post(self, request, *args, **kwargs) -> Response:
+        serializer = PasswordResetSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        try:
+            reset_password(**serializer.validated_data)
+        except ValidationError as exc:
+            return build_error_response(
+                code="validation_error",
+                message="Ошибка валидации.",
+                status_code=status.HTTP_400_BAD_REQUEST,
+                details=exc.message_dict,
+            )
+
+        return Response({"status": "password_reset"}, status=status.HTTP_200_OK)
+
+
+class PasswordChangeView(APIView):
+    permission_classes = [IsAuthenticatedUser]
+
+    def post(self, request, *args, **kwargs) -> Response:
+        serializer = PasswordChangeSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        try:
+            change_password(user=request.user, **serializer.validated_data)
+        except ValidationError as exc:
+            return build_error_response(
+                code="validation_error",
+                message="Ошибка валидации.",
+                status_code=status.HTTP_400_BAD_REQUEST,
+                details=exc.message_dict,
+            )
+
+        return Response({"status": "password_changed"}, status=status.HTTP_200_OK)
 
 
 class LogoutView(APIView):
@@ -176,7 +239,7 @@ class MeView(APIView):
     permission_classes = [IsAuthenticatedUser]
 
     def get(self, request, *args, **kwargs) -> Response:
-        return Response(PrivateUserSerializer(request.user).data)
+        return Response(PrivateUserSerializer(request.user, context={"request": request}).data)
 
 
 class PublicUserListView(generics.ListAPIView):
@@ -211,9 +274,9 @@ class ProfileUpdateView(APIView):
         except ValidationError as exc:
             return build_error_response(
                 code="validation_error",
-                message="Validation error.",
+                message="Ошибка валидации.",
                 status_code=status.HTTP_400_BAD_REQUEST,
                 details=exc.message_dict,
             )
 
-        return Response(PrivateUserSerializer(profile.user).data)
+        return Response(PrivateUserSerializer(profile.user, context={"request": request}).data)

@@ -152,46 +152,42 @@ Coder **не принимает архитектурных решений** са
 
 **Фаза:** **Phase 1 MVP — CLOSED**. Следующая — Phase 2.
 
-**Статистика выполнения (на 2026-04-23):**
+**Статистика выполнения (на 2026-04-29):**
 
 | Метрика                             | Значение |
 |-------------------------------------|----------|
-| Закрытых задач                      | 43       |
-| Backend tests passing               | 160      |
-| Frontend tests passing              | 15       |
-| Backend API endpoints               | ~35      |
-| Frontend pages                      | 18       |
-| Reusable UI components              | 7 доменных папок + 9 атомов |
-| Change requests resolved / cancelled| 5 / 1    |
+| Закрытых задач                      | 61       |
+| Backend tests passing               | 200+     |
+| Frontend tests passing              | 15+      |
+| Backend API endpoints               | ~40 (Wave 6 расширит до ~55) |
+| Frontend pages                      | 19 (Wave 6 добавит +1: PasswordReset) |
+| ADR принятых                        | 15       |
+| Change requests resolved / cancelled| 6 / 1    |
+| Change requests open                | 1 (CR-007 — закроется через T-123) |
 
-**Backend (Django):**
-- Все 8 apps реализованы: accounts, reference, games, comments, ratings, stats, avatars, core.
-- Полный API по `API_CONTRACT.md`, публичное/приватное разделение соблюдено.
-- Миграции применяются, seed-data для reference на месте.
-- Admin настроен для всех моделей (T-060).
-- CORS + CSRF работают (I-001, подтверждено ручными curl и тестами).
-- MEDIA settings на месте (T-072), avatar-генерация синхронная Pillow.
-- Dev-стек: `backend/docker-compose.yml` с Postgres.
+**Phase 1 — CLOSED. Phase 2 — IN PROGRESS, ~50% pre-rolled.**
 
-**Frontend (React):**
-- Vite + TS + Tailwind + React Query + Framer Motion.
-- 18 страниц, 11 API-модулей, 12 React Query хуков, 7 доменных компонентных папок.
-- Real API подключён для sessions / comments / ratings / stats / auth / avatars / profile.
-- Моки выведены из production-бандла.
-- Vite proxy `/api` → `http://localhost:8000` настроен.
+**Что уже сделано в Phase 2 (Waves 5):**
+- ✅ Hotfixes: avatar URL (T-114), match detail bugs (F-100), mobile viewport (F-104).
+- ✅ Auth refactor: secret word + repeat password + auto-active (T-110), password reset (T-111), change password (T-112), login by email-or-nick (T-113).
+- ✅ Reference layer pivot: GameMode rules schema (T-105), House decks → 2 варианта (T-106), validate_session_setup engine (T-107), Russian validation messages (T-115).
+- ✅ Audit/cleanup: T-118 убрал остатки expansion_a/b.
 
-**Integration:**
-- End-to-end dev smoke подтверждён на живых сервисах (I-002).
-- Draft production-stack `deploy/docker-compose.prod.yml` с nginx и отдельным `Dockerfile.prod` для фронта.
-- Осталось: staging deploy на реальной платформе (I-005), gunicorn в prod (T-081), frontend CI (I-004).
+**Что в Wave 6 (текущая):**
+- 🔵 Trek A — Lifecycle & Invitations: T-100 (start_session), T-120 (Invitations & RSVP), T-121 (random factions).
+- 🟣 Trek B — Round system: T-101 (RoundSnapshot), T-123 (finalize redesign), T-122 (replace participant).
+- 🟠 Trek C — Timeline events: T-102 (wildlings raid), T-103 (clash of kings), T-104 (event cards), T-126 (timeline endpoint).
+- 🟢 Trek D — Frontend: F-110 (RSVP), F-111 (start wizard), F-112 (round tracker UI — главный экран!), F-118 (finalize confirmation UI).
 
-**Следующая волна** (Polish после Phase 1) — в `ai-docs/tasks/IN_PROGRESS.md`:
-- T-080 (avatar style enum unify)
-- T-081 (gunicorn в prod)
-- I-004 (frontend CI)
-- F-015 (animation polish)
+**Что в Wave 7 (после Wave 6):**
+- Frontend для timeline/wildlings/clash/event cards (F-113..F-117, F-119).
+- Notifications subsystem (T-130 + F-101).
+- Search (T-131 + F-102).
+- Fun facts (T-132 + F-119).
+- Russian translation pass (F-105) — большая отдельная итерация.
+- Custom error pages (F-106).
 
-**Далее Phase 2:** RSVP (T-100), Celery/Redis (T-101), AI avatars (T-102), Seasons (T-200), Achievements (T-201), соответствующие frontend-задачи.
+**Production:** `I-005..I-009` ждут решения владельца по платформе.
 
 ---
 

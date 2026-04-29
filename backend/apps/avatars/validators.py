@@ -14,7 +14,7 @@ FORMAT_TO_EXTENSION = {
 
 def validate_image_file(photo_file) -> str:
     if photo_file.size > MAX_IMAGE_SIZE_BYTES:
-        raise ValidationError({"photo": ["Image must be 10 MB or smaller."]})
+        raise ValidationError({"photo": ["Изображение должно быть не больше 10 МБ."]})
 
     try:
         current_position = photo_file.tell()
@@ -25,7 +25,9 @@ def validate_image_file(photo_file) -> str:
         image = Image.open(photo_file)
         image.load()
     except (UnidentifiedImageError, OSError) as exc:
-        raise ValidationError({"photo": ["Upload a valid JPEG, PNG, or WEBP image."]}) from exc
+        raise ValidationError(
+            {"photo": ["Загрузите корректное изображение в формате JPEG, PNG или WEBP."]}
+        ) from exc
     finally:
         try:
             photo_file.seek(current_position)
@@ -34,6 +36,8 @@ def validate_image_file(photo_file) -> str:
 
     image_format = (image.format or "").upper()
     if image_format not in ALLOWED_IMAGE_FORMATS:
-        raise ValidationError({"photo": ["Upload a valid JPEG, PNG, or WEBP image."]})
+        raise ValidationError(
+            {"photo": ["Загрузите корректное изображение в формате JPEG, PNG или WEBP."]}
+        )
 
     return image_format

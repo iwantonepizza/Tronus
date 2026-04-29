@@ -1,28 +1,43 @@
 from __future__ import annotations
 
+from typing import TypedDict
+
+from django.conf import settings
 from django.contrib.auth.password_validation import validate_password
 from django.core.exceptions import ValidationError
 from django.db import transaction
 
 from apps.reference.models import Faction
 
+from . import selectors
 from .models import Profile, User
 
 UNSET = object()
 
 
+class RegistrationResult(TypedDict):
+    user: User
+    auto_activated: bool
+
+
 @transaction.atomic
-def register_user(*, email: str, password: str, nickname: str) -> User:
+def register_user(
+    *,
+    email: str,
+    password: str,
+    nickname: str,
+    secret_word: str | None = None,
+) -> RegistrationResult:
     normalized_email = User.objects.normalize_email(email).strip()
     normalized_nickname = nickname.strip()
 
     errors: dict[str, list[str]] = {}
 
     if User.objects.filter(email__iexact=normalized_email).exists():
-        errors["email"] = ["A user with this email already exists."]
+        errors["email"] = ["Пользователь с таким email уже существует."]
 
     if Profile.objects.filter(nickname__iexact=normalized_nickname).exists():
-        errors["nickname"] = ["A user with this nickname already exists."]
+        errors["nickname"] = ["Пользователь с таким ником уже существует."]
 
     try:
         validate_password(password)
@@ -32,10 +47,18 @@ def register_user(*, email: str, password: str, nickname: str) -> User:
     if errors:
         raise ValidationError(errors)
 
+    configured_secret_word = settings.REGISTRATION_SECRET_WORD.strip()
+    normalized_secret_word = (secret_word or "").strip().lower()
+    auto_activated = bool(
+        configured_secret_word
+        and normalized_secret_word
+        and normalized_secret_word == configured_secret_word.lower()
+    )
+
     user = User(
         username=normalized_email,
         email=normalized_email,
-        is_active=False,
+        is_active=auto_activated,
     )
     user.set_password(password)
     user.save()
@@ -44,6 +67,87 @@ def register_user(*, email: str, password: str, nickname: str) -> User:
         user=user,
         defaults={"nickname": normalized_nickname},
     )
+    return {"user": user, "auto_activated": auto_activated}
+
+
+def find_user_by_login(*, login: str) -> User | None:
+    normalized_login = login.strip()
+
+    user = selectors.get_user_by_email(email=normalized_login)
+    if user is not None:
+        return user
+
+    return selectors.get_user_by_nickname(nickname=normalized_login)
+
+
+@transaction.atomic
+def reset_password(
+    *,
+    login: str,
+    secret_word: str,
+    new_password: str,
+    new_password_repeat: str,
+) -> User:
+    invalid_login_or_secret_error = ValidationError(
+        {"login": ["Неверный логин или секретное слово."]}
+    )
+    user = find_user_by_login(login=login)
+
+    if user is None:
+        raise invalid_login_or_secret_error
+
+    configured_secret_word = settings.REGISTRATION_SECRET_WORD.strip()
+    normalized_secret_word = secret_word.strip().lower()
+    if (
+        not configured_secret_word
+        or not normalized_secret_word
+        or normalized_secret_word != configured_secret_word.lower()
+    ):
+        raise invalid_login_or_secret_error
+
+    errors: dict[str, list[str]] = {}
+    if new_password != new_password_repeat:
+        errors["new_password_repeat"] = ["Пароли не совпадают."]
+
+    try:
+        validate_password(new_password, user=user)
+    except ValidationError as exc:
+        errors["new_password"] = list(exc.messages)
+
+    if errors:
+        raise ValidationError(errors)
+
+    user.set_password(new_password)
+    user.save(update_fields=["password"])
+    return user
+
+
+@transaction.atomic
+def change_password(
+    *,
+    user: User,
+    current_password: str,
+    new_password: str,
+    new_password_repeat: str,
+) -> User:
+    errors: dict[str, list[str]] = {}
+
+    if not user.check_password(current_password):
+        errors["current_password"] = ["Текущий пароль введён неверно."]
+
+    if new_password != new_password_repeat:
+        errors["new_password_repeat"] = ["Пароли не совпадают."]
+
+    try:
+        validate_password(new_password, user=user)
+    except ValidationError as exc:
+        errors["new_password"] = list(exc.messages)
+
+    if errors:
+        raise ValidationError(errors)
+
+    user.set_password(new_password)
+    user.save(update_fields=["password"])
     return user
 
 
@@ -73,7 +177,7 @@ def update_profile(
         if Profile.objects.exclude(user=profile.user).filter(
             nickname__iexact=normalized_nickname
         ).exists():
-            errors["nickname"] = ["A user with this nickname already exists."]
+            errors["nickname"] = ["Пользователь с таким ником уже существует."]
         else:
             profile.nickname = normalized_nickname
             update_fields.append("nickname")

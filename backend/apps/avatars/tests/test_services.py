@@ -47,7 +47,7 @@ def test_generate_basic_avatar_rejects_oversized_upload(
     with pytest.raises(Exception) as exc_info:
         generate_basic_avatar(user=user, faction=faction, photo_file=photo)
 
-    assert "10 MB or smaller" in str(exc_info.value)
+    assert "Изображение должно быть не больше 10 МБ." in str(exc_info.value)
 
 
 @pytest.mark.django_db

@@ -58,7 +58,7 @@ class ErrorHandlingMixin:
             details = getattr(exc, "message_dict", None) or {"non_field_errors": exc.messages}
             return build_error_response(
                 code="validation_error",
-                message="Validation error.",
+                message="Ошибка валидации.",
                 status_code=status.HTTP_400_BAD_REQUEST,
                 details=details,
             )
@@ -66,7 +66,7 @@ class ErrorHandlingMixin:
         if isinstance(exc, DRFValidationError):
             return build_error_response(
                 code="validation_error",
-                message="Validation error.",
+                message="Ошибка валидации.",
                 status_code=status.HTTP_400_BAD_REQUEST,
                 details=exc.detail,
             )
@@ -74,21 +74,21 @@ class ErrorHandlingMixin:
         if isinstance(exc, NotAuthenticated):
             return build_error_response(
                 code="unauthorized",
-                message="Authentication credentials were not provided.",
+                message="Требуется аутентификация.",
                 status_code=status.HTTP_401_UNAUTHORIZED,
             )
 
         if isinstance(exc, PermissionDenied):
             return build_error_response(
                 code="permission_denied",
-                message="You do not have permission to perform this action.",
+                message="У вас нет прав для выполнения этого действия.",
                 status_code=status.HTTP_403_FORBIDDEN,
             )
 
         if isinstance(exc, (Http404, ObjectDoesNotExist)):
             return build_error_response(
                 code="not_found",
-                message="Not found.",
+                message="Объект не найден.",
                 status_code=status.HTTP_404_NOT_FOUND,
             )
 
@@ -116,7 +116,13 @@ class SessionCommentListCreateView(CommentsAPIView):
             limit=query_serializer.validated_data["limit"],
             before_id=query_serializer.validated_data.get("before_id"),
         )
-        return Response(MatchCommentSerializer(comments, many=True).data)
+        return Response(
+            MatchCommentSerializer(
+                comments,
+                many=True,
+                context={"request": request},
+            ).data
+        )
 
     def post(self, request, session_id: int, *args, **kwargs) -> Response:
         session = get_object_or_404(get_session_queryset(), pk=session_id)
@@ -130,7 +136,10 @@ class SessionCommentListCreateView(CommentsAPIView):
             **serializer.validated_data,
         )
         comment = get_object_or_404(selectors.get_comment_queryset(), pk=comment.pk)
-        return Response(MatchCommentSerializer(comment).data, status=status.HTTP_201_CREATED)
+        return Response(
+            MatchCommentSerializer(comment, context={"request": request}).data,
+            status=status.HTTP_201_CREATED,
+        )
 
 
 class SessionCommentDetailView(CommentsAPIView):
@@ -151,7 +160,7 @@ class SessionCommentDetailView(CommentsAPIView):
             selectors.get_comment_queryset(),
             pk=updated_comment.pk,
         )
-        return Response(MatchCommentSerializer(updated_comment).data)
+        return Response(MatchCommentSerializer(updated_comment, context={"request": request}).data)
 
     def delete(self, request, session_id: int, comment_id: int, *args, **kwargs) -> Response:
         comment = get_object_or_404(

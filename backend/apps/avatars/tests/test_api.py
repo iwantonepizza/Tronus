@@ -80,7 +80,7 @@ def test_set_current_avatar_marks_asset_and_updates_me_serializer(
     assert response.status_code == 200
     assert response.json()["is_current"] is True
     assert me_response.status_code == 200
-    assert me_response.json()["current_avatar"].endswith(".png")
+    assert me_response.json()["current_avatar"].startswith("http://testserver/media/avatars/")
 
 
 @pytest.mark.django_db

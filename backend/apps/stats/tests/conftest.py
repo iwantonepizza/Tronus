@@ -9,7 +9,7 @@ from apps.accounts.models import User
 from apps.comments.models import MatchComment
 from apps.games.models import GameSession, Outcome, Participation
 from apps.ratings.models import MatchVote
-from apps.reference.models import Deck, Faction, GameMode
+from apps.reference.models import Faction, GameMode, HouseDeck
 
 
 def _ensure_reference_data() -> dict[str, object]:
@@ -21,16 +21,16 @@ def _ensure_reference_data() -> dict[str, object]:
             "max_players": 8,
         },
     )
-    original, _ = Deck.objects.get_or_create(
+    original, _ = HouseDeck.objects.get_or_create(
         slug="original",
         defaults={"name": "Original"},
     )
-    quests, _ = GameMode.objects.get_or_create(
-        slug="quests",
+    feast_for_crows, _ = GameMode.objects.get_or_create(
+        slug="feast_for_crows",
         defaults={
-            "name": "Quests",
-            "min_players": 3,
-            "max_players": 8,
+            "name": "Feast for Crows",
+            "min_players": 4,
+            "max_players": 4,
         },
     )
     factions: dict[str, Faction] = {}
@@ -53,7 +53,7 @@ def _ensure_reference_data() -> dict[str, object]:
 
     return {
         "classic": classic,
-        "quests": quests,
+        "feast_for_crows": feast_for_crows,
         "original": original,
         **factions,
     }
@@ -102,7 +102,7 @@ def player_stats_dataset(make_user):
         session = GameSession.objects.create(
             scheduled_at=scheduled_at,
             mode=reference["classic"],
-            deck=reference["original"],
+            house_deck=reference["original"],
             created_by=target,
             status=GameSession.Status.COMPLETED,
             planning_note=f"Completed session #{index}",
@@ -162,7 +162,7 @@ def faction_stats_dataset(make_user):
             ],
         ),
         (
-            "quests",
+            "feast_for_crows",
             [
                 (alpha, "stark", 2, 5),
                 (beta, "greyjoy", 1, 7),
@@ -178,7 +178,7 @@ def faction_stats_dataset(make_user):
             ],
         ),
         (
-            "quests",
+            "feast_for_crows",
             [
                 (alpha, "baratheon", 1, 7),
                 (beta, "greyjoy", 2, 5),
@@ -186,7 +186,7 @@ def faction_stats_dataset(make_user):
             ],
         ),
         ("classic", [(alpha, "stark", 1, 7), (beta, "baratheon", 2, 5)]),
-        ("quests", [(beta, "stark", 1, 7), (alpha, "greyjoy", 2, 5)]),
+        ("feast_for_crows", [(beta, "stark", 1, 7), (alpha, "greyjoy", 2, 5)]),
     ]
 
     sessions: list[GameSession] = []
@@ -194,7 +194,7 @@ def faction_stats_dataset(make_user):
         session = GameSession.objects.create(
             scheduled_at=timezone.now() - timedelta(days=index),
             mode=reference[mode_slug],
-            deck=reference["original"],
+            house_deck=reference["original"],
             created_by=alpha,
             status=GameSession.Status.COMPLETED,
             planning_note=f"Faction stats session #{index}",
@@ -246,7 +246,7 @@ def overview_stats_dataset(make_user):
             "Longest table of the month.",
         ),
         (
-            "quests",
+            "feast_for_crows",
             [
                 (beta, "greyjoy", 1, 7),
                 (alpha, "stark", 2, 5),
@@ -264,7 +264,7 @@ def overview_stats_dataset(make_user):
             "Alpha closed the board again.",
         ),
         (
-            "quests",
+            "feast_for_crows",
             [
                 (gamma, "baratheon", 1, 7),
                 (beta, "stark", 2, 5),
@@ -282,7 +282,7 @@ def overview_stats_dataset(make_user):
         session = GameSession.objects.create(
             scheduled_at=timezone.now() - timedelta(days=index),
             mode=reference[mode_slug],
-            deck=reference["original"],
+            house_deck=reference["original"],
             created_by=alpha,
             status=GameSession.Status.COMPLETED,
             planning_note=f"Overview completed #{index}",
@@ -315,7 +315,7 @@ def overview_stats_dataset(make_user):
     planned_session = GameSession.objects.create(
         scheduled_at=timezone.now() + timedelta(days=1),
         mode=reference["classic"],
-        deck=reference["original"],
+        house_deck=reference["original"],
         created_by=alpha,
         status=GameSession.Status.PLANNED,
         planning_note="Next planned overview session.",
@@ -373,7 +373,7 @@ def head_to_head_dataset(make_user):
         session = GameSession.objects.create(
             scheduled_at=timezone.now() - timedelta(days=index),
             mode=reference["classic"],
-            deck=reference["original"],
+            house_deck=reference["original"],
             created_by=alpha,
             status=GameSession.Status.COMPLETED,
             planning_note=f"Head to head session #{index}",

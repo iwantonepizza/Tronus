@@ -45,7 +45,15 @@ export default defineConfig(({ mode }) => {
     server: {
       proxy: {
         '/api': {
-          target: 'http://localhost:8008',
+          target: 'http://localhost:8000',
+          changeOrigin: true,
+        },
+        '/admin': {
+          target: 'http://localhost:8000',
+          changeOrigin: true,
+        },
+        '/media': {
+          target: 'http://localhost:8000',
           changeOrigin: true,
         },
       },

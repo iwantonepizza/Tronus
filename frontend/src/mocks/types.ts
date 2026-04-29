@@ -17,14 +17,23 @@ export interface Faction {
 }
 
 export interface GameMode {
-  slug: 'classic' | 'quests' | 'alternative' | 'dragons'
+  slug:
+    | 'classic'
+    | 'feast_for_crows'
+    | 'dance_with_dragons'
+    | 'mother_of_dragons'
   name: string
   minPlayers: number
   maxPlayers: number
+  maxRounds: number
+  westerosDeckCount: number
+  allowedFactions: FactionSlug[]
+  requiredFactions: FactionSlug[]
+  factionsByPlayerCount: Record<string, FactionSlug[]>
 }
 
-export interface Deck {
-  slug: 'original' | 'expansion_a' | 'expansion_b'
+export interface HouseDeck {
+  slug: 'original' | 'alternative'
   name: string
 }
 
@@ -73,7 +82,7 @@ export interface MatchSession {
   id: number
   scheduledAt: string
   mode: GameMode
-  deck: Deck
+  deck: HouseDeck
   createdBy: PublicUser
   status: 'planned' | 'completed' | 'cancelled'
   planningNote: string

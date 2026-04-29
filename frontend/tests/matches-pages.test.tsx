@@ -1,11 +1,15 @@
-import { fireEvent, screen } from '@testing-library/react'
+import { fireEvent, screen, waitFor } from '@testing-library/react'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
-import { describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { MatchDetailPage } from '@/pages/MatchDetailPage'
 import { MatchesPage } from '@/pages/MatchesPage'
 import { renderWithProviders } from './renderWithProviders'
 
 describe('matches pages', () => {
+  beforeEach(() => {
+    vi.restoreAllMocks()
+  })
+
   it('filters matches by status and shows empty state when nothing matches', async () => {
     renderWithProviders(
       <MemoryRouter>
@@ -34,7 +38,7 @@ describe('matches pages', () => {
       </MemoryRouter>,
     )
 
-    expect(await screen.findByText(/Result board/i)).toBeInTheDocument()
+    expect(await screen.findByText(/Итоговая таблица/i)).toBeInTheDocument()
 
     const crownButton = screen
       .getAllByLabelText('Голос корона')
@@ -57,5 +61,30 @@ describe('matches pages', () => {
     fireEvent.click(screen.getByLabelText('Отправить комментарий'))
 
     expect(screen.getByText('Новый тестовый комментарий')).toBeInTheDocument()
+  })
+
+  it('disables RSVP buttons and allows creator to cancel a planned mock match', async () => {
+    vi.spyOn(window, 'confirm').mockReturnValue(true)
+
+    renderWithProviders(
+      <MemoryRouter initialEntries={['/matches/201']}>
+        <Routes>
+          <Route path="/matches/:id" element={<MatchDetailPage />} />
+        </Routes>
+      </MemoryRouter>,
+    )
+
+    expect(await screen.findByText(/Карточка партии/i)).toBeInTheDocument()
+
+    expect(screen.getByRole('button', { name: 'Я иду' })).toBeDisabled()
+    expect(screen.getByRole('button', { name: 'Под вопросом' })).toBeDisabled()
+    expect(screen.getByRole('button', { name: 'Не иду' })).toBeDisabled()
+
+    fireEvent.click(screen.getByRole('button', { name: /Отменить партию/i }))
+
+    expect(await screen.findByText('Партия отменена.')).toBeInTheDocument()
+    await waitFor(() => {
+      expect(screen.getByText('Отменена')).toBeInTheDocument()
+    })
   })
 })

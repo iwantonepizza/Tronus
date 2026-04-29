@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import pytest
 
-from apps.reference.models import Deck, Faction, GameMode
+from apps.reference.models import Faction, GameMode, HouseDeck
 
 
 def _ensure_reference_seed_data() -> None:
@@ -26,11 +26,11 @@ def _ensure_reference_seed_data() -> None:
             },
         )
 
-    for slug, name, min_players, max_players in (
-        ("alternative", "Alternative", 4, 4),
-        ("classic", "Classic", 3, 6),
-        ("dragons", "Dragons", 4, 8),
-        ("quests", "Quests", 4, 4),
+    for slug, name, min_players, max_players, max_rounds, deck_count, required in (
+        ("classic", "Classic", 3, 6, 10, 3, []),
+        ("dance_with_dragons", "Dance with Dragons", 6, 6, 10, 3, []),
+        ("feast_for_crows", "Feast for Crows", 4, 4, 7, 3, []),
+        ("mother_of_dragons", "Mother of Dragons", 4, 8, 10, 4, ["targaryen"]),
     ):
         GameMode.objects.get_or_create(
             slug=slug,
@@ -38,15 +38,17 @@ def _ensure_reference_seed_data() -> None:
                 "name": name,
                 "min_players": min_players,
                 "max_players": max_players,
+                "max_rounds": max_rounds,
+                "westeros_deck_count": deck_count,
+                "required_factions": required,
             },
         )
 
     for slug, name in (
-        ("expansion_a", "Expansion A"),
-        ("expansion_b", "Expansion B"),
+        ("alternative", "Alternative"),
         ("original", "Original"),
     ):
-        Deck.objects.get_or_create(slug=slug, defaults={"name": name})
+        HouseDeck.objects.get_or_create(slug=slug, defaults={"name": name})
 
 
 @pytest.mark.django_db
@@ -84,26 +86,25 @@ def test_game_mode_list_returns_seeded_modes(api_client) -> None:
 
     assert response.status_code == 200
     assert {item["slug"] for item in response.json()} == {
-        "alternative",
         "classic",
-        "dragons",
-        "quests",
+        "dance_with_dragons",
+        "feast_for_crows",
+        "mother_of_dragons",
     }
     assert response.json()[0]["slug"] == "classic"
+    by_slug = {item["slug"]: item for item in response.json()}
+    assert by_slug["feast_for_crows"]["max_rounds"] == 7
+    assert by_slug["mother_of_dragons"]["required_factions"] == ["targaryen"]
 
 
 @pytest.mark.django_db
-def test_deck_list_returns_seeded_decks(api_client) -> None:
+def test_deck_list_returns_seeded_house_decks(api_client) -> None:
     _ensure_reference_seed_data()
     response = api_client.get("/api/v1/reference/decks/")
 
     assert response.status_code == 200
-    assert {item["slug"] for item in response.json()} == {
-        "expansion_a",
-        "expansion_b",
-        "original",
-    }
-    assert response.json()[0]["slug"] == "expansion_a"
+    assert {item["slug"] for item in response.json()} == {"alternative", "original"}
+    assert response.json()[0]["slug"] == "alternative"
 
 
 @pytest.mark.django_db
@@ -123,4 +124,4 @@ def test_reference_endpoints_are_read_only(api_client, authenticated_client) -> 
     assert authenticated_response.status_code == 405
     assert Faction.objects.filter(slug="new-house").exists() is False
     assert GameMode.objects.filter(slug="new-mode").exists() is False
-    assert Deck.objects.filter(slug="new-deck").exists() is False
+    assert HouseDeck.objects.filter(slug="new-deck").exists() is False

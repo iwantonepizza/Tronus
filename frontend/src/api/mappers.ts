@@ -14,9 +14,9 @@ import type {
   ApiStatsSession,
   ApiUserSummary,
   ApiVote,
-  Deck,
   Faction,
   GameMode,
+  HouseDeck,
   PublicUser,
 } from '@/api/types'
 import type {
@@ -85,7 +85,7 @@ export function toDomainMode(mode: GameMode): DomainGameMode {
   }
 }
 
-export function toDomainDeck(deck: Deck): DomainDeck {
+export function toDomainDeck(deck: HouseDeck): DomainDeck {
   return {
     slug: deck.slug,
     name: deck.name,

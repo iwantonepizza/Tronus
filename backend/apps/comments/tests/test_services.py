@@ -32,7 +32,7 @@ def test_post_comment_rejects_blank_body(make_user, make_session) -> None:
     with pytest.raises(ValidationError) as exc_info:
         post_comment(session=session, author=author, body="   ")
 
-    assert exc_info.value.message_dict == {"body": ["Comment body cannot be blank."]}
+    assert exc_info.value.message_dict == {"body": ["Текст комментария не может быть пустым."]}
 
 
 @pytest.mark.django_db
@@ -65,7 +65,9 @@ def test_edit_comment_rejects_deleted_comment(make_user, make_session) -> None:
     with pytest.raises(ValidationError) as exc_info:
         edit_comment(comment=comment, body="Updated")
 
-    assert exc_info.value.message_dict == {"comment": ["Deleted comments cannot be edited."]}
+    assert exc_info.value.message_dict == {
+        "comment": ["Удалённый комментарий нельзя редактировать."]
+    }
 
 
 @pytest.mark.django_db

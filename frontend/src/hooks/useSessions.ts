@@ -295,3 +295,160 @@ export function useFinalizeSession(sessionId: number) {
     },
   })
 }
+
+// ── Wave 6 hooks ──────────────────────────────────────────────────────────────
+import {
+  completeRound,
+  discardLastRound,
+  inviteUser,
+  listInvites,
+  listRounds,
+  listTimeline,
+  randomizeFactions,
+  recordClashOfKings,
+  recordEventCard,
+  recordWildlingsRaid,
+  replaceParticipant,
+  selfInvite,
+  startSession,
+  updateInvite,
+  withdrawInvite,
+} from '@/api/sessions'
+import type {
+  ApiRoundSnapshot,
+  ApiSessionInvite,
+  ApiTimelineEvent,
+  ClashOfKingsPayload,
+  CompleteRoundPayload,
+  EventCardPlayedPayload,
+  InviteUserPayload,
+  ReplaceParticipantPayload,
+  StartSessionPayload,
+  UpdateRsvpPayload,
+  WildlingsRaidPayload,
+} from '@/api/types'
+
+export function useStartSession(sessionId: number) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (payload: StartSessionPayload) => startSession(sessionId, payload),
+    onSuccess: (session) => {
+      queryClient.invalidateQueries({ queryKey: ['sessions'] })
+      queryClient.setQueryData(['session', sessionId], session)
+    },
+  })
+}
+
+export function useInvites(sessionId: number | null) {
+  return useQuery<ApiSessionInvite[], Error>({
+    queryKey: ['invites', sessionId],
+    queryFn: () => listInvites(sessionId!),
+    enabled: sessionId !== null,
+  })
+}
+
+export function useInviteUser(sessionId: number) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (payload: InviteUserPayload) => inviteUser(sessionId, payload),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['invites', sessionId] }),
+  })
+}
+
+export function useSelfInvite(sessionId: number) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: () => selfInvite(sessionId),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['invites', sessionId] }),
+  })
+}
+
+export function useUpdateInvite(sessionId: number) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ inviteId, payload }: { inviteId: number; payload: UpdateRsvpPayload }) =>
+      updateInvite(sessionId, inviteId, payload),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['invites', sessionId] }),
+  })
+}
+
+export function useWithdrawInvite(sessionId: number) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (inviteId: number) => withdrawInvite(sessionId, inviteId),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['invites', sessionId] }),
+  })
+}
+
+export function useRandomizeFactions(sessionId: number) {
+  return useMutation({
+    mutationFn: () => randomizeFactions(sessionId),
+  })
+}
+
+export function useRounds(sessionId: number | null) {
+  return useQuery<ApiRoundSnapshot[], Error>({
+    queryKey: ['rounds', sessionId],
+    queryFn: () => listRounds(sessionId!),
+    enabled: sessionId !== null,
+  })
+}
+
+export function useCompleteRound(sessionId: number) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (payload: CompleteRoundPayload) => completeRound(sessionId, payload),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['rounds', sessionId] }),
+  })
+}
+
+export function useDiscardLastRound(sessionId: number) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (roundId: number) => discardLastRound(sessionId, roundId),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['rounds', sessionId] }),
+  })
+}
+
+export function useReplaceParticipant(sessionId: number) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (payload: ReplaceParticipantPayload) => replaceParticipant(sessionId, payload),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['session', sessionId] })
+      queryClient.invalidateQueries({ queryKey: ['sessions'] })
+    },
+  })
+}
+
+export function useTimeline(sessionId: number | null) {
+  return useQuery<ApiTimelineEvent[], Error>({
+    queryKey: ['timeline', sessionId],
+    queryFn: () => listTimeline(sessionId!),
+    enabled: sessionId !== null,
+  })
+}
+
+export function useRecordWildlingsRaid(sessionId: number) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (payload: WildlingsRaidPayload) => recordWildlingsRaid(sessionId, payload),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['timeline', sessionId] }),
+  })
+}
+
+export function useRecordClashOfKings(sessionId: number) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (payload: ClashOfKingsPayload) => recordClashOfKings(sessionId, payload),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['timeline', sessionId] }),
+  })
+}
+
+export function useRecordEventCard(sessionId: number) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (payload: EventCardPlayedPayload) => recordEventCard(sessionId, payload),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['timeline', sessionId] }),
+  })
+}

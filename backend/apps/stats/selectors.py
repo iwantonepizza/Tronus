@@ -50,7 +50,7 @@ def get_overview_session_queryset() -> QuerySet[GameSession]:
     return (
         GameSession.objects.select_related(
             "mode",
-            "deck",
+            "house_deck",
             "created_by__profile",
             "created_by__profile__favorite_faction",
             "outcome__mvp__profile",
@@ -561,7 +561,7 @@ def head_to_head_stats(*, user_a_id: int, user_b_id: int) -> dict[str, Any]:
     participations = list(
         get_completed_participation_queryset()
         .filter(user_id__in=[user_a_id, user_b_id])
-        .select_related("session__mode", "session__deck")
+        .select_related("session__mode", "session__house_deck")
     )
 
     grouped_by_session: dict[int, dict[str, Any]] = {}
@@ -640,7 +640,7 @@ def head_to_head_stats(*, user_a_id: int, user_b_id: int) -> dict[str, Any]:
             "id": row["session"].pk,
             "scheduled_at": row["session"].scheduled_at,
             "mode": row["session"].mode,
-            "deck": row["session"].deck,
+            "deck": row["session"].house_deck,
             "user_a": {
                 "faction": row["user_a"].faction.slug,
                 "place": row["user_a"].place,

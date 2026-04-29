@@ -54,7 +54,7 @@ class ErrorHandlingMixin:
             details = getattr(exc, "message_dict", None) or {"non_field_errors": exc.messages}
             return build_error_response(
                 code="validation_error",
-                message="Validation error.",
+                message="Ошибка валидации.",
                 status_code=status.HTTP_400_BAD_REQUEST,
                 details=details,
             )
@@ -62,7 +62,7 @@ class ErrorHandlingMixin:
         if isinstance(exc, DRFValidationError):
             return build_error_response(
                 code="validation_error",
-                message="Validation error.",
+                message="Ошибка валидации.",
                 status_code=status.HTTP_400_BAD_REQUEST,
                 details=exc.detail,
             )
@@ -70,21 +70,21 @@ class ErrorHandlingMixin:
         if isinstance(exc, NotAuthenticated):
             return build_error_response(
                 code="unauthorized",
-                message="Authentication credentials were not provided.",
+                message="Требуется аутентификация.",
                 status_code=status.HTTP_401_UNAUTHORIZED,
             )
 
         if isinstance(exc, PermissionDenied):
             return build_error_response(
                 code="permission_denied",
-                message="You do not have permission to perform this action.",
+                message="У вас нет прав для выполнения этого действия.",
                 status_code=status.HTTP_403_FORBIDDEN,
             )
 
         if isinstance(exc, (Http404, ObjectDoesNotExist)):
             return build_error_response(
                 code="not_found",
-                message="Not found.",
+                message="Объект не найден.",
                 status_code=status.HTTP_404_NOT_FOUND,
             )
 
@@ -104,7 +104,7 @@ class SessionVoteListCreateView(RatingsAPIView):
     def get(self, request, session_id: int, *args, **kwargs) -> Response:
         get_object_or_404(get_session_queryset(), pk=session_id)
         votes = selectors.list_votes(session_id=session_id)
-        return Response(MatchVoteSerializer(votes, many=True).data)
+        return Response(MatchVoteSerializer(votes, many=True, context={"request": request}).data)
 
     def post(self, request, session_id: int, *args, **kwargs) -> Response:
         session = get_object_or_404(get_session_queryset(), pk=session_id)
@@ -118,7 +118,10 @@ class SessionVoteListCreateView(RatingsAPIView):
             **serializer.validated_data,
         )
         vote = get_object_or_404(selectors.get_vote_queryset(), pk=vote.pk)
-        return Response(MatchVoteSerializer(vote).data, status=status.HTTP_201_CREATED)
+        return Response(
+            MatchVoteSerializer(vote, context={"request": request}).data,
+            status=status.HTTP_201_CREATED,
+        )
 
 
 class SessionVoteDetailView(RatingsAPIView):
@@ -140,7 +143,7 @@ class SessionVoteDetailView(RatingsAPIView):
             **serializer.validated_data,
         )
         updated_vote = get_object_or_404(selectors.get_vote_queryset(), pk=updated_vote.pk)
-        return Response(MatchVoteSerializer(updated_vote).data)
+        return Response(MatchVoteSerializer(updated_vote, context={"request": request}).data)
 
     def delete(self, request, session_id: int, vote_id: int, *args, **kwargs) -> Response:
         vote = get_object_or_404(

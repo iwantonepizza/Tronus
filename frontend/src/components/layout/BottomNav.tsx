@@ -6,7 +6,7 @@ export function BottomNav() {
   const location = useLocation()
 
   return (
-    <nav className="fixed inset-x-0 bottom-0 z-40 flex h-16 items-center justify-around border-t border-border-subtle bg-bg-base/95 px-2 backdrop-blur-xl md:hidden">
+    <nav className="bottom-nav-safe fixed inset-x-0 bottom-0 z-40 flex items-center justify-around border-t border-border-subtle bg-bg-base/95 px-2 backdrop-blur-xl md:hidden">
       {MOBILE_NAV_ITEMS.map((item) => {
         const ItemIcon = item.icon
         const isActive = item.match(location.pathname)

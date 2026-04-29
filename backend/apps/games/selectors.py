@@ -10,7 +10,7 @@ from .models import GameSession, Participation
 def _session_base_queryset() -> QuerySet[GameSession]:
     return GameSession.objects.select_related(
         "mode",
-        "deck",
+        "house_deck",
         "created_by__profile",
         "outcome__mvp__profile",
     ).order_by("-scheduled_at", "-pk")
@@ -78,3 +78,31 @@ def list_planned_after(*, at: datetime) -> QuerySet[GameSession]:
 
 def list_recent_completed(*, limit: int) -> QuerySet[GameSession]:
     return _session_base_queryset().filter(status=GameSession.Status.COMPLETED)[:limit]
+
+
+# T-101: Round system
+from .models import RoundSnapshot
+
+
+def get_session_rounds(*, session: GameSession) -> QuerySet[RoundSnapshot]:
+    """Return all RoundSnapshots for a session, ordered by round_number."""
+    return RoundSnapshot.objects.filter(session=session).order_by("round_number")
+
+
+# T-120: Invitations
+from .models import SessionInvite
+
+
+def get_invite_queryset():
+    return SessionInvite.objects.select_related(
+        "user__profile", "desired_faction", "session"
+    ).order_by("created_at")
+
+
+# T-126: Timeline selector
+from .models import MatchTimelineEvent
+
+
+def get_session_timeline(*, session: GameSession) -> QuerySet[MatchTimelineEvent]:
+    """Return all timeline events for a session, ordered by happened_at."""
+    return MatchTimelineEvent.objects.filter(session=session).order_by("happened_at", "pk")

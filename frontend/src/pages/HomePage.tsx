@@ -56,8 +56,8 @@ export function HomePage() {
     return (
       <EmptyState
         icon={<Sparkles className="h-5 w-5" />}
-        title="Overview is unavailable"
-        description="The overview stats endpoint did not respond."
+        title="Обзор недоступен"
+        description="Эндпоинт обзорной статистики не ответил."
       />
     )
   }
@@ -75,10 +75,10 @@ export function HomePage() {
         <header className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
           <div className="max-w-3xl">
             <p className="font-mono text-xs uppercase tracking-[0.32em] text-gold">
-              Season Pulse
+              Пульс сезона
             </p>
             <h1 className="mt-4 text-balance font-display text-5xl leading-none text-text-primary sm:text-6xl">
-              Hello Tronus
+              Tronus сегодня
             </h1>
             <p className="mt-4 max-w-2xl text-base leading-8 text-text-secondary sm:text-lg">
               Главная теперь строится от реальных stats endpoints: ближайшая
@@ -198,7 +198,7 @@ export function HomePage() {
               {overview.topWinrate.map((entry, index) => (
                 <LeaderboardRow
                   key={entry.user.id}
-                  metricLabel="Winrate"
+                  metricLabel="Винрейт"
                   metricValue={`${Math.round((entry.winrate ?? 0) * 100)}%`}
                   rank={index + 1}
                   user={entry.user}
@@ -297,7 +297,7 @@ function HeroSection({
             Ближайшая партия
           </span>
           <span className="rounded-full border border-border-subtle bg-bg-base px-3 py-1 text-xs text-text-secondary">
-            Match #{nextMatch.id}
+            Партия #{nextMatch.id}
           </span>
         </div>
 
@@ -328,7 +328,7 @@ function HeroSection({
           {rsvpOptions.map((option) => (
             <Button
               key={option.value}
-              aria-label={`RSVP ${option.value}`}
+              aria-label={`Ответ на приглашение: ${option.label}`}
               aria-pressed={rsvp === option.value}
               className={cn(
                 'min-w-[148px]',
@@ -352,7 +352,7 @@ function HeroSection({
               Подтверждённый состав
             </h3>
             <span className="text-xs uppercase tracking-[0.2em] text-text-tertiary">
-              Host {nextMatch.createdBy.nickname}
+              Ведущий {nextMatch.createdBy.nickname}
             </span>
           </div>
           <div className="mt-5 flex flex-wrap gap-3">
@@ -390,12 +390,12 @@ function HeroSection({
 
         <div className="rounded-[1.75rem] border border-border-subtle bg-bg-base/70 p-5">
           <p className="font-mono text-xs uppercase tracking-[0.2em] text-text-tertiary">
-            Hero summary
+            Кратко о партии
           </p>
           <dl className="mt-4 grid gap-4 sm:grid-cols-3 lg:grid-cols-1 xl:grid-cols-3">
             <SummaryStat label="Режим" value={nextMatch.mode.name} />
             <SummaryStat label="Колода" value={nextMatch.deck.name} />
-            <SummaryStat label="Статус" value="planned" />
+            <SummaryStat label="Статус" value="запланирована" />
           </dl>
         </div>
       </div>

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from django.contrib.postgres.fields import ArrayField
 from django.core.validators import RegexValidator
 from django.db import models
 
@@ -7,7 +8,7 @@ from apps.core.models import TimestampedModel
 
 HEX_COLOR_VALIDATOR = RegexValidator(
     regex=r"^#[0-9A-Fa-f]{6}$",
-    message="Color must be a HEX value like #AABBCC.",
+    message="Цвет должен быть HEX-значением вида #AABBCC.",
 )
 
 
@@ -31,7 +32,20 @@ class GameMode(TimestampedModel):
     name = models.CharField(max_length=64)
     min_players = models.PositiveSmallIntegerField()
     max_players = models.PositiveSmallIntegerField()
+    max_rounds = models.PositiveSmallIntegerField(default=10)
     description = models.TextField(blank=True)
+    westeros_deck_count = models.PositiveSmallIntegerField(default=3)
+    allowed_factions = ArrayField(
+        base_field=models.SlugField(max_length=64),
+        default=list,
+        blank=True,
+    )
+    required_factions = ArrayField(
+        base_field=models.SlugField(max_length=64),
+        default=list,
+        blank=True,
+    )
+    factions_by_player_count = models.JSONField(default=dict, blank=True)
 
     class Meta:
         ordering = ["name"]
@@ -46,7 +60,7 @@ class GameMode(TimestampedModel):
         return self.name
 
 
-class Deck(TimestampedModel):
+class HouseDeck(TimestampedModel):
     slug = models.SlugField(unique=True)
     name = models.CharField(max_length=64)
     description = models.TextField(blank=True)

@@ -5,7 +5,38 @@ import type {
   VoteType,
 } from '@/api/types'
 
-export type { EndReason, FactionSlug, SessionStatus, VoteType }
+export type { EndReason, FactionSlug, SessionStatus, VoteType, RsvpStatus, TimelineEventKind }
+
+export interface DomainInvite {
+  id: number
+  user: DomainPublicUser
+  rsvpStatus: RsvpStatus
+  desiredFaction: string | null
+  invitedBy: DomainPublicUser | null
+  createdAt: string
+}
+
+export interface DomainRoundSnapshot {
+  id: number
+  roundNumber: number
+  influenceThrone: number[]   // participation_ids ordered by track position
+  influenceSword: number[]
+  influenceCourt: number[]
+  supply: Record<string, number>   // str(participation_id) → value
+  castles: Record<string, number>
+  willingsThreat: number
+  note: string
+  createdAt: string
+}
+
+export interface DomainTimelineEvent {
+  id: number
+  kind: TimelineEventKind
+  happenedAt: string
+  actor: DomainPublicUser | null
+  payload: Record<string, unknown>
+  createdAt: string
+}
 
 export interface DomainFaction {
   slug: FactionSlug

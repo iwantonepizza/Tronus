@@ -13,7 +13,7 @@ from .models import MatchComment
 def _normalize_body(*, body: str) -> str:
     normalized_body = body.strip()
     if not normalized_body:
-        raise ValidationError({"body": ["Comment body cannot be blank."]})
+        raise ValidationError({"body": ["Текст комментария не может быть пустым."]})
     return normalized_body
 
 
@@ -38,7 +38,7 @@ def edit_comment(
     body: str,
 ) -> MatchComment:
     if comment.is_deleted:
-        raise ValidationError({"comment": ["Deleted comments cannot be edited."]})
+        raise ValidationError({"comment": ["Удалённый комментарий нельзя редактировать."]})
 
     comment.body = _normalize_body(body=body)
     comment.edited_at = timezone.now()

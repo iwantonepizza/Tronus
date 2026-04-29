@@ -103,3 +103,115 @@ export function finalizeSession(
     json: payload,
   })
 }
+
+// ── Wave 6 API calls ─────────────────────────────────────────────────────────
+import type {
+  ApiRoundSnapshot,
+  ApiSessionInvite,
+  ApiTimelineEvent,
+  ClashOfKingsPayload,
+  CompleteRoundPayload,
+  EventCardPlayedPayload,
+  InviteUserPayload,
+  ReplaceParticipantPayload,
+  StartSessionPayload,
+  UpdateRsvpPayload,
+  WildlingsRaidPayload,
+} from '@/api/types'
+
+export function startSession(sessionId: number, payload: StartSessionPayload) {
+  return api<ApiSessionDetail>(`/sessions/${sessionId}/start/`, {
+    method: 'POST',
+    json: payload,
+  })
+}
+
+// Invites
+export function listInvites(sessionId: number) {
+  return api<ApiSessionInvite[]>(`/sessions/${sessionId}/invites/`)
+}
+
+export function inviteUser(sessionId: number, payload: InviteUserPayload) {
+  return api<ApiSessionInvite>(`/sessions/${sessionId}/invites/`, {
+    method: 'POST',
+    json: payload,
+  })
+}
+
+export function selfInvite(sessionId: number) {
+  return api<ApiSessionInvite>(`/sessions/${sessionId}/invites/me/`, {
+    method: 'POST',
+  })
+}
+
+export function updateInvite(sessionId: number, inviteId: number, payload: UpdateRsvpPayload) {
+  return api<ApiSessionInvite>(`/sessions/${sessionId}/invites/${inviteId}/`, {
+    method: 'PATCH',
+    json: payload,
+  })
+}
+
+export function withdrawInvite(sessionId: number, inviteId: number) {
+  return api<void>(`/sessions/${sessionId}/invites/${inviteId}/`, {
+    method: 'DELETE',
+  })
+}
+
+export function randomizeFactions(sessionId: number) {
+  return api<{ user_id: number; faction_slug: string }[]>(
+    `/sessions/${sessionId}/randomize-factions/`,
+    { method: 'POST' },
+  )
+}
+
+// Rounds
+export function listRounds(sessionId: number) {
+  return api<ApiRoundSnapshot[]>(`/sessions/${sessionId}/rounds/`)
+}
+
+export function completeRound(sessionId: number, payload: CompleteRoundPayload) {
+  return api<ApiRoundSnapshot>(`/sessions/${sessionId}/rounds/`, {
+    method: 'POST',
+    json: payload,
+  })
+}
+
+export function discardLastRound(sessionId: number, roundId: number) {
+  return api<void>(`/sessions/${sessionId}/rounds/${roundId}/`, {
+    method: 'DELETE',
+  })
+}
+
+// Replace participant
+export function replaceParticipant(sessionId: number, payload: ReplaceParticipantPayload) {
+  return api<ApiParticipation>(`/sessions/${sessionId}/replace-participant/`, {
+    method: 'POST',
+    json: payload,
+  })
+}
+
+// Timeline
+export function listTimeline(sessionId: number) {
+  return api<ApiTimelineEvent[]>(`/sessions/${sessionId}/timeline/`)
+}
+
+export function recordWildlingsRaid(sessionId: number, payload: WildlingsRaidPayload) {
+  return api<ApiTimelineEvent>(`/sessions/${sessionId}/timeline/wildlings-raid/`, {
+    method: 'POST',
+    json: payload,
+  })
+}
+
+export function recordClashOfKings(sessionId: number, payload: ClashOfKingsPayload) {
+  return api<ApiTimelineEvent>(`/sessions/${sessionId}/timeline/clash-of-kings/`, {
+    method: 'POST',
+    json: payload,
+  })
+}
+
+export function recordEventCard(sessionId: number, payload: EventCardPlayedPayload) {
+  return api<ApiTimelineEvent>(`/sessions/${sessionId}/timeline/event-card/`, {
+    method: 'POST',
+    json: payload,
+  })
+}

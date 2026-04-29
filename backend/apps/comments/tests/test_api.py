@@ -1,8 +1,11 @@
 from __future__ import annotations
 
 import pytest
+from django.core.files.uploadedfile import SimpleUploadedFile
 
+from apps.avatars.models import AvatarAsset
 from apps.comments.models import MatchComment
+from apps.reference.models import Faction
 
 
 @pytest.mark.django_db
@@ -24,6 +27,52 @@ def test_list_comments_is_public_and_supports_before_cursor(
 
     assert response.status_code == 200
     assert [item["id"] for item in response.json()] == [middle_comment.pk, oldest_comment.pk]
+
+
+@pytest.mark.django_db
+def test_list_comments_returns_absolute_author_avatar_url(
+    api_client,
+    make_user,
+    make_session,
+    settings,
+    tmp_path,
+) -> None:
+    media_root = tmp_path / "media"
+    media_root.mkdir(parents=True, exist_ok=True)
+    settings.MEDIA_ROOT = media_root
+    settings.MEDIA_URL = "/media/"
+
+    author = make_user(email="avatar-author@example.com")
+    faction, _ = Faction.objects.get_or_create(
+        slug="stark",
+        defaults={
+            "name": "Stark",
+            "color": "#6B7B8C",
+            "on_primary": "#F0F0F0",
+            "is_active": True,
+        },
+    )
+    avatar = AvatarAsset.objects.create(
+        user=author,
+        faction=faction,
+        generated_image=SimpleUploadedFile(
+            "comment-avatar.png",
+            b"comment-avatar-bytes",
+            content_type="image/png",
+        ),
+        is_current=True,
+    )
+    author.profile.current_avatar = avatar
+    author.profile.save(update_fields=["current_avatar"])
+    session = make_session(created_by=author)
+    MatchComment.objects.create(session=session, author=author, body="Avatar comment")
+
+    response = api_client.get(f"/api/v1/sessions/{session.pk}/comments/")
+
+    assert response.status_code == 200
+    assert response.json()[0]["author"]["current_avatar"].startswith(
+        "http://testserver/media/avatars/"
+    )
 
 
 @pytest.mark.django_db
@@ -163,7 +212,9 @@ def test_patch_comment_returns_validation_error_for_deleted_comment(
 
     assert response.status_code == 400
     assert response.json()["error"]["code"] == "validation_error"
-    assert response.json()["error"]["details"]["comment"] == ["Deleted comments cannot be edited."]
+    assert response.json()["error"]["details"]["comment"] == [
+        "Удалённый комментарий нельзя редактировать."
+    ]
 
 
 @pytest.mark.django_db

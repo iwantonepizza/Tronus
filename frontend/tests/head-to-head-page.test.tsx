@@ -114,11 +114,11 @@ describe('head-to-head page', () => {
     )
 
     expect(
-      await screen.findByRole('heading', { name: /Player comparison/i }),
+      await screen.findByRole('heading', { name: /Сравнение игроков/i }),
     ).toBeInTheDocument()
-    expect(screen.getByText('Games together')).toBeInTheDocument()
-    expect(screen.getByText('Shared matches')).toBeInTheDocument()
-    expect(screen.getByRole('link', { name: 'Match #77' })).toBeInTheDocument()
+    expect(screen.getByText('Партий вместе')).toBeInTheDocument()
+    expect(screen.getByText('Общие партии')).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'Партия #77' })).toBeInTheDocument()
     expect(screen.getAllByText('IronFist').length).toBeGreaterThan(0)
     expect(screen.getAllByText('SeaWolf').length).toBeGreaterThan(0)
   })
@@ -133,7 +133,7 @@ describe('head-to-head page', () => {
     )
 
     expect(
-      await screen.findByText('Pick two different players'),
+      await screen.findByText('Выберите двух разных игроков'),
     ).toBeInTheDocument()
   })
 })

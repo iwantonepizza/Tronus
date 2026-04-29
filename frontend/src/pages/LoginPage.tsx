@@ -1,13 +1,20 @@
-import type { InputHTMLAttributes, LabelHTMLAttributes, ReactNode } from 'react'
 import { useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { Link, Navigate, useLocation, useNavigate } from 'react-router-dom'
 import { z } from 'zod'
 import { ApiError } from '@/api/client'
 import { useAuth } from '@/hooks/useAuth'
+import {
+  Field,
+  FieldError,
+  InlineMessage,
+  Input,
+  Label,
+  Tag,
+} from '@/pages/authShared'
 
 const loginSchema = z.object({
-  email: z.string().email('Введите корректный email.'),
+  login: z.string().trim().min(1, 'Введите email или ник.'),
   password: z.string().min(1, 'Введите пароль.'),
 })
 
@@ -26,12 +33,54 @@ function mapValidationErrors(
   for (const issue of result.error.issues) {
     const fieldName = issue.path[0]
 
-    if (fieldName === 'email' || fieldName === 'password') {
+    if (fieldName === 'login' || fieldName === 'password') {
       setError(fieldName, { message: issue.message })
     }
   }
 
   return null
+}
+
+function AuthPageShell({
+  children,
+  description,
+  eyebrow,
+  footer,
+  title,
+}: {
+  children: React.ReactNode
+  description: string
+  eyebrow: string
+  footer?: React.ReactNode
+  title: string
+}) {
+  return (
+    <main className="mx-auto flex min-h-[100dvh] max-w-6xl items-center px-6 py-16 md:px-10">
+      <section className="grid w-full gap-8 overflow-hidden rounded-[2rem] border border-border-subtle bg-bg-elev1/95 shadow-panel backdrop-blur lg:grid-cols-[1.1fr_0.9fr]">
+        <div className="bg-glow px-8 py-10 md:px-10">
+          <p className="font-mono text-xs uppercase tracking-[0.28em] text-gold/80">
+            {eyebrow}
+          </p>
+          <h1 className="mt-4 font-display text-4xl text-text-primary md:text-5xl">
+            {title}
+          </h1>
+          <p className="mt-4 max-w-xl text-base leading-7 text-text-secondary">
+            {description}
+          </p>
+          <div className="mt-8 flex flex-wrap gap-3">
+            <Tag>сессионная cookie</Tag>
+            <Tag>защищено CSRF</Tag>
+            <Tag>react-hook-form</Tag>
+            <Tag>zod</Tag>
+          </div>
+        </div>
+        <div className="px-8 py-10 md:px-10">
+          {children}
+          {footer ? <div className="mt-6">{footer}</div> : null}
+        </div>
+      </section>
+    </main>
+  )
 }
 
 export function LoginPage() {
@@ -46,7 +95,7 @@ export function LoginPage() {
     formState: { errors, isSubmitting },
   } = useForm<LoginFormValues>({
     defaultValues: {
-      email: '',
+      login: '',
       password: '',
     },
   })
@@ -70,7 +119,6 @@ export function LoginPage() {
     setFormError(null)
 
     const values = mapValidationErrors(rawValues, setError)
-
     if (values === null) {
       return
     }
@@ -82,7 +130,7 @@ export function LoginPage() {
       if (error instanceof ApiError) {
         if (error.code === 'validation_error' && error.details) {
           for (const [field, messages] of Object.entries(error.details)) {
-            if (field === 'email' || field === 'password') {
+            if (field === 'login' || field === 'password') {
               setError(field, { message: messages[0] })
             }
           }
@@ -90,7 +138,7 @@ export function LoginPage() {
         }
 
         if (error.code === 'account_pending_approval') {
-          setFormError('Аккаунт создан, но ещё ждёт подтверждения owner.')
+          setFormError('Аккаунт создан, но ещё ждёт подтверждения владельца.')
           return
         }
 
@@ -104,32 +152,42 @@ export function LoginPage() {
 
   return (
     <AuthPageShell
-      eyebrow="Session Auth"
+      eyebrow="Сессионный вход"
       title="Вход в Tronus"
       description="Фронт работает через Django session + CSRF, без токенов в localStorage."
       footer={
-        <p className="text-sm text-text-secondary">
-          Нет аккаунта?{' '}
-          <Link
-            className="text-gold transition hover:text-gold-hover"
-            to="/register"
-          >
-            Зарегистрироваться
-          </Link>
-        </p>
+        <div className="space-y-3 text-sm text-text-secondary">
+          <p>
+            Нет аккаунта?{' '}
+            <Link
+              className="text-gold transition hover:text-gold-hover"
+              to="/register"
+            >
+              Зарегистрироваться
+            </Link>
+          </p>
+          <p>
+            <Link
+              className="text-gold transition hover:text-gold-hover"
+              to="/password-reset"
+            >
+              Забыли пароль?
+            </Link>
+          </p>
+        </div>
       }
     >
       <form className="space-y-5" onSubmit={handleSubmit(onSubmit)} noValidate>
         <Field>
-          <Label htmlFor="login-email">Email</Label>
+          <Label htmlFor="login-field">Почта или ник</Label>
           <Input
-            id="login-email"
-            type="email"
-            placeholder="friend@example.com"
-            aria-invalid={errors.email ? 'true' : 'false'}
-            {...register('email')}
+            id="login-field"
+            type="text"
+            placeholder="ваш_ник или you@example.com"
+            aria-invalid={errors.login ? 'true' : 'false'}
+            {...register('login')}
           />
-          <FieldError message={errors.email?.message} />
+          <FieldError message={errors.login?.message} />
         </Field>
 
         <Field>
@@ -137,7 +195,7 @@ export function LoginPage() {
           <Input
             id="login-password"
             type="password"
-            placeholder="StrongPassword123!"
+            placeholder="Введите пароль"
             aria-invalid={errors.password ? 'true' : 'false'}
             {...register('password')}
           />
@@ -155,108 +213,5 @@ export function LoginPage() {
         </button>
       </form>
     </AuthPageShell>
-  )
-}
-
-function AuthPageShell({
-  children,
-  description,
-  eyebrow,
-  footer,
-  title,
-}: {
-  children: ReactNode
-  description: string
-  eyebrow: string
-  footer?: ReactNode
-  title: string
-}) {
-  return (
-    <main className="mx-auto flex min-h-screen max-w-6xl items-center px-6 py-16 md:px-10">
-      <section className="grid w-full gap-8 overflow-hidden rounded-[2rem] border border-border-subtle bg-bg-elev1/95 shadow-panel backdrop-blur lg:grid-cols-[1.1fr_0.9fr]">
-        <div className="bg-glow px-8 py-10 md:px-10">
-          <p className="font-mono text-xs uppercase tracking-[0.28em] text-gold/80">
-            {eyebrow}
-          </p>
-          <h1 className="mt-4 font-display text-4xl text-text-primary md:text-5xl">
-            {title}
-          </h1>
-          <p className="mt-4 max-w-xl text-base leading-7 text-text-secondary">
-            {description}
-          </p>
-          <div className="mt-8 flex flex-wrap gap-3">
-            <Tag>session cookie</Tag>
-            <Tag>csrf protected</Tag>
-            <Tag>react-hook-form</Tag>
-            <Tag>zod</Tag>
-          </div>
-        </div>
-        <div className="px-8 py-10 md:px-10">
-          {children}
-          {footer ? <div className="mt-6">{footer}</div> : null}
-        </div>
-      </section>
-    </main>
-  )
-}
-
-function Field({ children }: { children: ReactNode }) {
-  return <div className="space-y-2">{children}</div>
-}
-
-function Label(props: LabelHTMLAttributes<HTMLLabelElement>) {
-  return (
-    <label
-      {...props}
-      className="block font-mono text-xs uppercase tracking-[0.22em] text-text-secondary"
-    />
-  )
-}
-
-function Input(props: InputHTMLAttributes<HTMLInputElement>) {
-  return (
-    <input
-      {...props}
-      className="w-full rounded-2xl border border-border-subtle bg-bg-base px-4 py-3 text-text-primary outline-none transition placeholder:text-text-tertiary focus:border-gold"
-    />
-  )
-}
-
-function FieldError({ message }: { message?: string }) {
-  if (!message) {
-    return null
-  }
-
-  return <p className="text-sm text-red-300">{message}</p>
-}
-
-function InlineMessage({
-  message,
-  tone,
-}: {
-  message: string | null
-  tone: 'error' | 'success'
-}) {
-  if (message === null) {
-    return null
-  }
-
-  const toneClass =
-    tone === 'error'
-      ? 'border-red-500/30 bg-red-500/10 text-red-200'
-      : 'border-emerald-500/30 bg-emerald-500/10 text-emerald-200'
-
-  return (
-    <div className={`rounded-2xl border px-4 py-3 text-sm ${toneClass}`}>
-      {message}
-    </div>
-  )
-}
-
-function Tag({ children }: { children: ReactNode }) {
-  return (
-    <span className="rounded-full border border-border-subtle bg-bg-elev2 px-4 py-2 font-mono text-xs text-text-secondary">
-      {children}
-    </span>
   )
 }

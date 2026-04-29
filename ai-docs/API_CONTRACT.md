@@ -35,12 +35,44 @@
 {
   "email": "friend@example.com",
   "password": "...",
+  "password_repeat": "...",
+  "secret_word": "lovecraft",
   "nickname": "IronFist"
 }
 ```
-РћС‚РІРµС‚: `201` СЃ `{"id": <id>, "status": "pending_approval"}`. РўРѕРєРµРЅР° РЅРµ РІС‹РґР°С‘С‚СЃСЏ вЂ” Р°РІС‚РѕСЂРёР·Р°С†РёСЏ РЅРµРІРѕР·РјРѕР¶РЅР° РґРѕ Р°РїСЂСѓРІР°.
+РћС‚РІРµС‚: `201` СЃ `{"id": <id>, "status": "pending_approval" | "active", "auto_activated": <bool>}`. РўРѕРєРµРЅР° РЅРµ РІС‹РґР°С‘С‚СЃСЏ вЂ” Р°РІС‚РѕСЂРёР·Р°С†РёСЏ РЅРµРІРѕР·РјРѕР¶РЅР° РґРѕ Р°РїСЂСѓРІР° РёР»Рё РїРѕСЃР»Рµ Р°РІС‚РѕР°РєС‚РёРІР°С†РёРё РЅСѓР¶РµРЅ РѕР±С‹С‡РЅС‹Р№ login.
+
+**POST `/auth/login/` body:**
+```json
+{
+  "login": "IronFist или friend@example.com",
+  "password": "..."
+}
+```
+РћС‚РІРµС‚: `200` СЃ private user serializer. РџРѕРґРґРµСЂР¶РёРІР°СЋС‚СЃСЏ РѕР±Р° РїСѓС‚Рё РІС…РѕРґР°: РїРѕ `email` Рё РїРѕ `nickname`.
 
 ---
+
+**POST `/auth/password/reset/` body:**
+```json
+{
+  "login": "IronFist èëè friend@example.com",
+  "secret_word": "lovecraft",
+  "new_password": "NewStrongPassword123!",
+  "new_password_repeat": "NewStrongPassword123!"
+}
+```
+ÐžÑ‚Ð²ÐµÑ‚: `200` Ñ `{"status": "password_reset"}`. Ð”Ð»Ñ Ð½ÐµÑÑƒÑ‰ÐµÑÑ‚Ð²ÑƒÑŽÑ‰ÐµÐ³Ð¾ `login` Ð¸ Ð½ÐµÐ²ÐµÑ€Ð½Ð¾Ð³Ð¾ `secret_word` Ð²Ð¾Ð·Ð²Ñ€Ð°Ñ‰Ð°ÐµÑ‚ÑÑ Ð¾Ð´Ð¸Ð½Ð°ÐºÐ¾Ð²Ñ‹Ð¹ `400 validation_error`, Ñ‡Ñ‚Ð¾Ð±Ñ‹ Ð½Ðµ Ñ€Ð°ÑÐºÑ€Ñ‹Ð²Ð°Ñ‚ÑŒ Ð½Ð°Ð»Ð¸Ñ‡Ð¸Ðµ Ð°ÐºÐºÐ°ÑƒÐ½Ñ‚Ð°.
+
+**POST `/auth/password/change/` body:**
+```json
+{
+  "current_password": "OldStrongPassword123!",
+  "new_password": "NewStrongPassword123!",
+  "new_password_repeat": "NewStrongPassword123!"
+}
+```
+ÐžÑ‚Ð²ÐµÑ‚: `200` Ñ `{"status": "password_changed"}`. Ð­Ð½Ð´Ð¿Ð¾Ð¸Ð½Ñ‚ Ñ‚Ñ€ÐµÐ±ÑƒÐµÑ‚ Ð°Ð²Ñ‚Ð¾Ñ€Ð¸Ð·Ð°Ñ†Ð¸Ð¸; Ð¿Ñ€Ð¸ Ð½ÐµÐ²ÐµÑ€Ð½Ð¾Ð¼ `current_password` Ð²Ð¾Ð·Ð²Ñ€Ð°Ñ‰Ð°ÐµÑ‚ÑÑ `400 validation_error`.
 
 ## `reference`
 

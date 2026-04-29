@@ -38,15 +38,15 @@ export function HeadToHeadPage() {
     selectedUserA !== selectedUserB
 
   if (usersQuery.isLoading) {
-    return <PageStatus title="Loading players for comparison..." />
+    return <PageStatus title="Загружаем игроков для сравнения..." />
   }
 
   if (usersQuery.isError) {
     return (
       <EmptyState
         icon={<Swords className="h-5 w-5" />}
-        title="Comparison is unavailable"
-        description="The public users endpoint did not respond, so head-to-head cannot be assembled yet."
+        title="Сравнение недоступно"
+        description="Публичный список пользователей не ответил, поэтому сравнение пока не собрать."
       />
     )
   }
@@ -55,22 +55,22 @@ export function HeadToHeadPage() {
     <main className="space-y-6">
       <header className="rounded-[2rem] border border-border-subtle bg-bg-elev1 p-6 shadow-panel">
         <p className="font-mono text-xs uppercase tracking-[0.24em] text-gold/80">
-          Head To Head
+          Лицом к лицу
         </p>
         <h1 className="mt-4 font-display text-4xl text-text-primary md:text-5xl">
-          Player comparison
+          Сравнение игроков
         </h1>
         <p className="mt-3 max-w-3xl text-base leading-7 text-text-secondary">
-          Compare two players across shared matches: wins, higher placements,
-          favorite factions in the matchup and the full common history.
+          Сравните двух игроков по общим партиям: победам, более высоким
+          местам, любимым фракциям в этом матчапе и всей истории встреч.
         </p>
 
         <div className="mt-6 grid gap-4 lg:grid-cols-[1fr_auto_1fr] lg:items-end">
           <Select
-            label="Player A"
+            label="Игрок A"
             value={selectedUserA ? String(selectedUserA) : ''}
             options={[
-              { label: 'Choose player', value: '' },
+              { label: 'Выберите игрока', value: '' },
               ...users.map((user) => ({
                 label: user.nickname,
                 value: String(user.id),
@@ -89,14 +89,14 @@ export function HeadToHeadPage() {
             className="inline-flex h-11 items-center justify-center rounded-2xl border border-border-subtle bg-bg-base px-4 text-sm font-semibold text-text-primary transition hover:border-gold hover:text-gold"
             onClick={() => setSelectedUsers(selectedUserB, selectedUserA)}
           >
-            Swap
+            Поменять местами
           </button>
 
           <Select
-            label="Player B"
+            label="Игрок B"
             value={selectedUserB ? String(selectedUserB) : ''}
             options={[
-              { label: 'Choose player', value: '' },
+              { label: 'Выберите игрока', value: '' },
               ...users.map((user) => ({
                 label: user.nickname,
                 value: String(user.id),
@@ -115,8 +115,8 @@ export function HeadToHeadPage() {
       {!comparisonReady ? (
         <EmptyState
           icon={<Trophy className="h-5 w-5" />}
-          title="Pick two different players"
-          description="Select both sides to load their direct rivalry and shared match history."
+          title="Выберите двух разных игроков"
+          description="Нужно указать обе стороны, чтобы загрузить их личное противостояние и общую историю."
         />
       ) : null}
 
@@ -125,20 +125,20 @@ export function HeadToHeadPage() {
       selectedUserA === selectedUserB ? (
         <EmptyState
           icon={<Trophy className="h-5 w-5" />}
-          title="Same player selected twice"
-          description="Head-to-head requires two different players."
+          title="Один и тот же игрок выбран дважды"
+          description="Для сравнения нужны два разных игрока."
         />
       ) : null}
 
       {comparisonReady && headToHeadQuery.isLoading ? (
-        <PageStatus title="Loading rivalry breakdown..." />
+        <PageStatus title="Загружаем расклад по противостоянию..." />
       ) : null}
 
       {comparisonReady && (headToHeadQuery.isError || !headToHeadQuery.data) ? (
         <EmptyState
           icon={<Swords className="h-5 w-5" />}
-          title="Head-to-head was not found"
-          description="The backend did not return a valid comparison payload for this pair."
+          title="Сравнение не найдено"
+          description="Бэкенд не вернул корректный payload для этой пары игроков."
         />
       ) : null}
 
@@ -160,14 +160,14 @@ function HeadToHeadContent({
         <div className="space-y-4">
           <PlayerPill size="lg" user={stats.userA} />
           <div className="grid gap-3 sm:grid-cols-2">
-            <MiniComparisonCard label="Wins" value={stats.wins.userA} />
+            <MiniComparisonCard label="Победы" value={stats.wins.userA} />
             <MiniComparisonCard
-              label="Higher placements"
+              label="Более высокие места"
               value={stats.higherPlace.userA}
             />
           </div>
           <FavoriteFactionCard
-            label="Favorite matchup faction"
+            label="Любимая фракция в матчапе"
             slug={stats.favoriteFactions.userA}
           />
         </div>
@@ -179,27 +179,27 @@ function HeadToHeadContent({
         <div className="space-y-4">
           <PlayerPill size="lg" user={stats.userB} />
           <div className="grid gap-3 sm:grid-cols-2">
-            <MiniComparisonCard label="Wins" value={stats.wins.userB} />
+            <MiniComparisonCard label="Победы" value={stats.wins.userB} />
             <MiniComparisonCard
-              label="Higher placements"
+              label="Более высокие места"
               value={stats.higherPlace.userB}
             />
           </div>
           <FavoriteFactionCard
-            label="Favorite matchup faction"
+            label="Любимая фракция в матчапе"
             slug={stats.favoriteFactions.userB}
           />
         </div>
       </section>
 
       <section className="grid gap-4 md:grid-cols-3">
-        <StatTile label="Games together" value={stats.gamesTogether} />
+        <StatTile label="Партий вместе" value={stats.gamesTogether} />
         <StatTile
-          label={`${stats.userA.nickname} win share`}
+          label={`Доля побед ${stats.userA.nickname}`}
           value={formatShare(stats.gamesTogether, stats.wins.userA)}
         />
         <StatTile
-          label={`${stats.userB.nickname} win share`}
+          label={`Доля побед ${stats.userB.nickname}`}
           value={formatShare(stats.gamesTogether, stats.wins.userB)}
         />
       </section>
@@ -208,15 +208,15 @@ function HeadToHeadContent({
         <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
           <div>
             <h2 className="font-display text-3xl text-text-primary">
-              Shared matches
+              Общие партии
             </h2>
             <p className="mt-2 text-sm leading-7 text-text-secondary">
-              Completed sessions where both players were present, with direct
-              placement and castle totals side by side.
+              Завершённые партии, где присутствовали оба игрока, с прямым
+              сравнением мест и количества замков.
             </p>
           </div>
           <span className="text-sm text-text-tertiary">
-            {stats.matches.length} recorded matches
+            {stats.matches.length} зафиксированных партий
           </span>
         </div>
 
@@ -232,7 +232,7 @@ function HeadToHeadContent({
                     to={`/matches/${match.id}`}
                     className="font-display text-2xl text-text-primary transition hover:text-gold"
                   >
-                    Match #{match.id}
+                    Партия #{match.id}
                   </Link>
                   <p className="mt-2 text-sm text-text-secondary">
                     {formatDate(match.scheduledAt)} • {match.mode.name} •{' '}
@@ -240,7 +240,7 @@ function HeadToHeadContent({
                   </p>
                 </div>
                 <div className="text-sm text-text-tertiary">
-                  Shared rivalry snapshot
+                  Снимок общего противостояния
                 </div>
               </div>
 
@@ -275,7 +275,7 @@ function MatchSideCard({
         <p className="font-semibold text-text-primary">{userLabel}</p>
         {side.isWinner ? (
           <span className="rounded-full border border-gold/40 bg-gold/10 px-3 py-1 text-xs uppercase tracking-[0.18em] text-gold">
-            Winner
+            Победитель
           </span>
         ) : null}
       </div>
@@ -283,10 +283,10 @@ function MatchSideCard({
       <div className="mt-4 flex flex-wrap items-center gap-3">
         <FactionBadge factionSlug={side.faction} size="sm" />
         <span className="rounded-full border border-border-subtle bg-bg-base px-3 py-2 text-sm text-text-secondary">
-          Place {side.place ?? '-'}
+          Место {side.place ?? '-'}
         </span>
         <span className="rounded-full border border-border-subtle bg-bg-base px-3 py-2 text-sm text-text-secondary">
-          Castles {side.castles ?? '-'}
+          Замки {side.castles ?? '-'}
         </span>
       </div>
     </div>
@@ -309,7 +309,7 @@ function FavoriteFactionCard({
         {slug ? (
           <FactionBadge factionSlug={slug} />
         ) : (
-          <span className="text-sm text-text-secondary">No clear favorite yet</span>
+          <span className="text-sm text-text-secondary">Пока без явного фаворита</span>
         )}
       </div>
     </div>

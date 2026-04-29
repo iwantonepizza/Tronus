@@ -154,8 +154,8 @@ One-to-one к `GameSession`, создаётся при `finalize_session`.
 |------------------|----------------------|-------------------------------------------------------------------|
 | user             | FK(User)             |                                                                   |
 | faction          | FK(Faction)          |                                                                   |
-| style            | enum                 | `basic_frame` (MVP) / `realistic` / `dark` / `heraldic` (Phase 2). |
-| source_photo     | image, nullable      | Загруженное фото (может отсутствовать для `basic_frame`).          |
+| style            | enum                 | `basic` (MVP) / `realistic` / `dark` / `heraldic` (Phase 2).      |
+| source_photo     | image, nullable      | Загруженное фото (может отсутствовать для `basic`).               |
 | generated_image  | image                | Финальная аватарка.                                               |
 | is_current       | bool                 | True если `profile.current_avatar = self`.                        |
 

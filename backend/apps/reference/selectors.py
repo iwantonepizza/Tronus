@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from django.db.models import QuerySet
 
-from .models import Deck, Faction, GameMode
+from .models import Faction, GameMode, HouseDeck
 
 
 def list_active_factions() -> QuerySet[Faction]:
@@ -13,5 +13,5 @@ def list_game_modes() -> QuerySet[GameMode]:
     return GameMode.objects.order_by("name")
 
 
-def list_decks() -> QuerySet[Deck]:
-    return Deck.objects.order_by("name")
+def list_decks() -> QuerySet[HouseDeck]:
+    return HouseDeck.objects.order_by("name")

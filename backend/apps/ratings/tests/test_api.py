@@ -112,7 +112,7 @@ def test_post_vote_returns_validation_error_for_non_participant(
     assert response.status_code == 400
     assert response.json()["error"]["code"] == "validation_error"
     assert response.json()["error"]["details"]["from_user"] == [
-        "Only session participants can vote."
+        "Голосовать могут только участники партии."
     ]
 
 
@@ -214,7 +214,9 @@ def test_patch_vote_rejects_after_window_for_author(
 
     assert response.status_code == 400
     assert response.json()["error"]["code"] == "validation_error"
-    assert response.json()["error"]["details"]["vote"] == ["Vote editing window has expired."]
+    assert response.json()["error"]["details"]["vote"] == [
+        "Окно для изменения голоса уже истекло."
+    ]
 
 
 @pytest.mark.django_db

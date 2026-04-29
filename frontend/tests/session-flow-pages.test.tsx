@@ -37,7 +37,7 @@ describe('session flow pages', () => {
       </MemoryRouter>,
     )
 
-    fireEvent.change(await screen.findByLabelText('Planning note'), {
+    fireEvent.change(await screen.findByLabelText('Примечание к партии'), {
       target: { value: 'Обновили заметку для теста.' },
     })
     fireEvent.click(screen.getByRole('button', { name: /Сохранить изменения/i }))
@@ -58,7 +58,7 @@ describe('session flow pages', () => {
 
     fireEvent.click(await screen.findByRole('button', { name: /^Дальше$/i }))
     fireEvent.click(screen.getByRole('button', { name: /^Дальше$/i }))
-    fireEvent.change(screen.getByLabelText('Final note'), {
+    fireEvent.change(screen.getByLabelText('Итоговая заметка'), {
       target: { value: 'Тестовая финализация из wizard.' },
     })
     fireEvent.click(screen.getByRole('button', { name: /^Дальше$/i }))

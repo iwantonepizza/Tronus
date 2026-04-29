@@ -26,11 +26,11 @@ def _get_locked_vote(*, vote_id: int) -> MatchVote:
 
 def _ensure_session_can_have_votes(*, session: GameSession) -> None:
     if session.status != GameSession.Status.COMPLETED:
-        raise ValidationError({"session": ["Votes are allowed only for completed sessions."]})
+        raise ValidationError({"session": ["Голосовать можно только в завершённых партиях."]})
 
     if not Outcome.objects.filter(session=session).exists():
         raise ValidationError(
-            {"session": ["Completed session must have an outcome before voting."]}
+            {"session": ["У завершённой партии должен быть зафиксирован итог перед голосованием."]}
         )
 
 
@@ -39,7 +39,7 @@ def _get_outcome(*, session: GameSession) -> Outcome:
         return Outcome.objects.get(session=session)
     except Outcome.DoesNotExist as exc:
         raise ValidationError(
-            {"session": ["Completed session must have an outcome before voting."]}
+            {"session": ["У завершённой партии должен быть зафиксирован итог перед голосованием."]}
         ) from exc
 
 
@@ -49,7 +49,7 @@ def _ensure_vote_window_open(*, session: GameSession, is_admin: bool) -> None:
 
     deadline = _get_outcome(session=session).created_at + timedelta(hours=24)
     if timezone.now() > deadline:
-        raise ValidationError({"vote": ["Vote editing window has expired."]})
+        raise ValidationError({"vote": ["Окно для изменения голоса уже истекло."]})
 
 
 def _get_participant_user_ids(*, session_id: int) -> set[int]:
@@ -70,21 +70,21 @@ def cast_vote(
     _ensure_session_can_have_votes(session=locked_session)
 
     if from_user.pk == to_user.pk:
-        raise ValidationError({"to_user": ["You cannot vote for yourself."]})
+        raise ValidationError({"to_user": ["Нельзя голосовать за самого себя."]})
 
     participant_user_ids = _get_participant_user_ids(session_id=locked_session.pk)
     if from_user.pk not in participant_user_ids:
-        raise ValidationError({"from_user": ["Only session participants can vote."]})
+        raise ValidationError({"from_user": ["Голосовать могут только участники партии."]})
 
     if to_user.pk not in participant_user_ids:
-        raise ValidationError({"to_user": ["Vote target must be a participant of the session."]})
+        raise ValidationError({"to_user": ["Получатель голоса должен быть участником партии."]})
 
     if MatchVote.objects.filter(
         session=locked_session,
         from_user=from_user,
         to_user=to_user,
     ).exists():
-        raise ValidationError({"vote": ["You have already voted for this player in the session."]})
+        raise ValidationError({"vote": ["Вы уже голосовали за этого игрока в этой партии."]})
 
     return MatchVote.objects.create(
         session=locked_session,

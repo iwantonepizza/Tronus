@@ -4,7 +4,7 @@ from rest_framework import serializers
 
 from apps.accounts.serializers import PublicUserSerializer
 from apps.games.models import GameSession, Outcome, Participation
-from apps.reference.serializers import DeckSerializer, FactionSerializer, GameModeSerializer
+from apps.reference.serializers import FactionSerializer, GameModeSerializer, HouseDeckSerializer
 
 LEADERBOARD_METRIC_CHOICES = (
     "wins",
@@ -90,7 +90,7 @@ class OverviewParticipationSerializer(serializers.ModelSerializer):
 
 class OverviewSessionSerializer(serializers.ModelSerializer):
     mode = GameModeSerializer(read_only=True)
-    deck = DeckSerializer(read_only=True)
+    deck = HouseDeckSerializer(source="house_deck", read_only=True)
     created_by = PublicUserSerializer(read_only=True)
     participations = OverviewParticipationSerializer(many=True, read_only=True)
     outcome = OverviewOutcomeSerializer(read_only=True, allow_null=True)
@@ -169,7 +169,7 @@ class HeadToHeadQuerySerializer(serializers.Serializer):
     def validate(self, attrs):
         if attrs["user_a"] == attrs["user_b"]:
             raise serializers.ValidationError(
-                {"user_b": ["`user_b` must differ from `user_a`."]}
+                {"user_b": ["Параметр `user_b` должен отличаться от `user_a`."]}
             )
         return attrs
 
@@ -185,7 +185,7 @@ class HeadToHeadMatchSerializer(serializers.Serializer):
     id = serializers.IntegerField(min_value=1)
     scheduled_at = serializers.DateTimeField()
     mode = GameModeSerializer()
-    deck = DeckSerializer()
+    deck = HouseDeckSerializer()
     user_a = HeadToHeadSideSerializer()
     user_b = HeadToHeadSideSerializer()
 

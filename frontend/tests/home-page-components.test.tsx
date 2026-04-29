@@ -172,7 +172,7 @@ describe('HomePage overview screen', () => {
     )
 
     expect(
-      await screen.findByRole('heading', { name: /Hello Tronus/i }),
+      await screen.findByRole('heading', { name: /Tronus сегодня/i }),
     ).toBeInTheDocument()
     expect((await screen.findAllByText(/Ближайшая партия/i)).length).toBeGreaterThan(0)
     expect(await screen.findByText(/Последние партии/i)).toBeInTheDocument()
@@ -188,10 +188,10 @@ describe('HomePage overview screen', () => {
     )
 
     const maybeButton = await screen.findByRole('button', {
-      name: /RSVP maybe/i,
+      name: /Ответ на приглашение: Под вопросом/i,
     })
     const goingButton = await screen.findByRole('button', {
-      name: /RSVP going/i,
+      name: /Ответ на приглашение: Я иду/i,
     })
 
     expect(goingButton).toHaveAttribute('aria-pressed', 'true')

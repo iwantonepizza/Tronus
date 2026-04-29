@@ -27,3 +27,7 @@ def get_user_queryset() -> QuerySet[User]:
 
 def get_user_by_email(*, email: str) -> User | None:
     return get_user_queryset().filter(email__iexact=email).first()
+
+
+def get_user_by_nickname(*, nickname: str) -> User | None:
+    return get_user_queryset().filter(profile__nickname__iexact=nickname).first()

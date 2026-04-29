@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
 import type { ReactNode } from 'react'
 import { ArrowDownRight, ArrowUpRight } from 'lucide-react'
 import { cn } from '@/lib/cn'
@@ -19,30 +19,9 @@ export function StatTile({
   value,
 }: StatTileProps) {
   const [displayValue, setDisplayValue] = useState(0)
-  const [isVisible, setIsVisible] = useState(false)
-  const ref = useRef<HTMLElement>(null)
-
-  // Trigger count-up only when the tile enters the viewport
-  useEffect(() => {
-    const el = ref.current
-    if (!el) return
-
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting) {
-          setIsVisible(true)
-          observer.disconnect()
-        }
-      },
-      { threshold: 0.25 },
-    )
-
-    observer.observe(el)
-    return () => observer.disconnect()
-  }, [])
 
   useEffect(() => {
-    if (typeof value !== 'number' || !countUp || !isVisible) {
+    if (typeof value !== 'number' || !countUp) {
       return
     }
 
@@ -51,9 +30,7 @@ export function StatTile({
 
     const frame = (timestamp: number) => {
       const progress = Math.min((timestamp - start) / duration, 1)
-      // ease-out: decelerate as it approaches the target
-      const eased = 1 - Math.pow(1 - progress, 3)
-      setDisplayValue(Math.round(value * eased))
+      setDisplayValue(Math.round(value * progress))
 
       if (progress < 1) {
         requestAnimationFrame(frame)
@@ -65,13 +42,13 @@ export function StatTile({
     return () => {
       cancelAnimationFrame(requestId)
     }
-  }, [countUp, isVisible, value])
+  }, [countUp, value])
 
   const renderedValue =
     typeof value === 'number' && countUp ? displayValue : value
 
   return (
-    <article ref={ref} className="rounded-[2rem] border border-border-subtle bg-bg-elev1 p-5 shadow-panel">
+    <article className="rounded-[2rem] border border-border-subtle bg-bg-elev1 p-5 shadow-panel">
       <div className="flex items-start justify-between gap-3">
         <div>
           <p className="font-mono text-xs uppercase tracking-[0.22em] text-text-tertiary">

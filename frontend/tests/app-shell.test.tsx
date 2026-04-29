@@ -1,4 +1,4 @@
-import { screen, within } from '@testing-library/react'
+import { fireEvent, screen, within } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import App from '@/App'
 import { useLeaderboardStats } from '@/hooks/useStats'
@@ -98,13 +98,30 @@ describe('app shell', () => {
     expect(activeLink).toHaveAttribute('aria-current', 'page')
   })
 
+  it('shows explicit stubs for search and notifications actions', async () => {
+    installMatchMedia(1280)
+    window.history.pushState({}, '', '/matches')
+
+    renderApp()
+
+    expect(await screen.findByText(/Лента партий/i)).toBeInTheDocument()
+
+    fireEvent.click(
+      screen.getByRole('button', { name: /Поиск по партии и игрокам/i }),
+    )
+    expect(screen.getByText('Поиск скоро будет.')).toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Уведомления' }))
+    expect(screen.getByText('Уведомления скоро будут.')).toBeInTheDocument()
+  })
+
   it('shows bottom navigation on mobile and hides sidebar', async () => {
     installMatchMedia(390)
     window.history.pushState({}, '', '/leaderboard')
 
     renderApp()
 
-    expect(await screen.findByText('Season ratings')).toBeInTheDocument()
+    expect(await screen.findByText('Рейтинги сезона')).toBeInTheDocument()
     const mobileNav = screen.getByRole('navigation')
 
     expect(

@@ -1,9 +1,9 @@
 import type {
-  Deck,
   Faction,
   FactionStats,
   FactionSlug,
   GameMode,
+  HouseDeck,
   MatchComment,
   MatchSession,
   MatchVote,
@@ -71,16 +71,60 @@ export const mockFactions: Faction[] = [
 ]
 
 export const mockModes: GameMode[] = [
-  { slug: 'classic', name: 'Классика', minPlayers: 3, maxPlayers: 6 },
-  { slug: 'quests', name: 'Пир воронов', minPlayers: 4, maxPlayers: 6 },
-  { slug: 'alternative', name: 'Танец драконов', minPlayers: 2, maxPlayers: 3 },
-  { slug: 'dragons', name: 'Мать драконов', minPlayers: 5, maxPlayers: 8 },
+  {
+    slug: 'classic',
+    name: 'Классика',
+    minPlayers: 3,
+    maxPlayers: 6,
+    maxRounds: 10,
+    westerosDeckCount: 3,
+    allowedFactions: [],
+    requiredFactions: [],
+    factionsByPlayerCount: {
+      '3': ['stark', 'lannister', 'baratheon'],
+      '4': ['stark', 'lannister', 'baratheon', 'greyjoy'],
+      '5': ['stark', 'lannister', 'baratheon', 'greyjoy', 'tyrell'],
+      '6': ['stark', 'lannister', 'baratheon', 'greyjoy', 'tyrell', 'martell'],
+    },
+  },
+  {
+    slug: 'feast_for_crows',
+    name: 'Пир воронов',
+    minPlayers: 4,
+    maxPlayers: 4,
+    maxRounds: 7,
+    westerosDeckCount: 3,
+    allowedFactions: ['arryn', 'stark', 'lannister', 'baratheon'],
+    requiredFactions: [],
+    factionsByPlayerCount: {},
+  },
+  {
+    slug: 'dance_with_dragons',
+    name: 'Танец с драконами',
+    minPlayers: 6,
+    maxPlayers: 6,
+    maxRounds: 10,
+    westerosDeckCount: 3,
+    allowedFactions: ['stark', 'lannister', 'baratheon', 'greyjoy', 'tyrell', 'martell'],
+    requiredFactions: [],
+    factionsByPlayerCount: {},
+  },
+  {
+    slug: 'mother_of_dragons',
+    name: 'Мать драконов',
+    minPlayers: 4,
+    maxPlayers: 8,
+    maxRounds: 10,
+    westerosDeckCount: 4,
+    allowedFactions: [],
+    requiredFactions: ['targaryen'],
+    factionsByPlayerCount: {},
+  },
 ]
 
-export const mockDecks: Deck[] = [
-  { slug: 'original', name: 'База' },
-  { slug: 'expansion_a', name: 'Дополнение A' },
-  { slug: 'expansion_b', name: 'Дополнение B' },
+export const mockDecks: HouseDeck[] = [
+  { slug: 'original', name: 'Base' },
+  { slug: 'alternative', name: 'Alternative' },
 ]
 
 export const mockPlayers: PublicUser[] = [
@@ -150,7 +194,7 @@ function modeBySlug(slug: GameMode['slug']) {
   return mockModes.find((mode) => mode.slug === slug) ?? mockModes[0]
 }
 
-function deckBySlug(slug: Deck['slug']) {
+function deckBySlug(slug: HouseDeck['slug']) {
   return mockDecks.find((deck) => deck.slug === slug) ?? mockDecks[0]
 }
 
@@ -195,7 +239,7 @@ function buildMatch(match: {
   id: number
   scheduledAt: string
   mode: GameMode['slug']
-  deck: Deck['slug']
+  deck: HouseDeck['slug']
   createdBy: number
   status: MatchSession['status']
   planningNote: string
@@ -241,8 +285,8 @@ const matchSeeds: Array<Parameters<typeof buildMatch>[0]> = [
   {
     id: 201,
     scheduledAt: '2026-04-28T16:30:00Z',
-    mode: 'dragons',
-    deck: 'expansion_b',
+    mode: 'mother_of_dragons',
+    deck: 'alternative',
     createdBy: 1,
     status: 'planned',
     planningNote: 'Нужен стол побольше и таймер на 3 часа.',
@@ -274,8 +318,8 @@ const matchSeeds: Array<Parameters<typeof buildMatch>[0]> = [
   {
     id: 203,
     scheduledAt: '2026-05-11T18:15:00Z',
-    mode: 'quests',
-    deck: 'expansion_a',
+    mode: 'feast_for_crows',
+    deck: 'alternative',
     createdBy: 6,
     status: 'planned',
     planningNote: 'Хочу реванш за прошлую партию без ранних альянсов.',
@@ -305,8 +349,8 @@ const matchSeeds: Array<Parameters<typeof buildMatch>[0]> = [
   {
     id: 205,
     scheduledAt: '2026-02-02T18:00:00Z',
-    mode: 'quests',
-    deck: 'expansion_b',
+    mode: 'feast_for_crows',
+    deck: 'alternative',
     createdBy: 4,
     status: 'cancelled',
     planningNote: 'Owner отменил, потому что заболел.',
@@ -321,8 +365,8 @@ const matchSeeds: Array<Parameters<typeof buildMatch>[0]> = [
   {
     id: 206,
     scheduledAt: '2026-04-14T17:30:00Z',
-    mode: 'dragons',
-    deck: 'expansion_b',
+    mode: 'mother_of_dragons',
+    deck: 'alternative',
     createdBy: 1,
     status: 'completed',
     planningNote: 'Большой стол и чайник рядом.',
@@ -376,8 +420,8 @@ const matchSeeds: Array<Parameters<typeof buildMatch>[0]> = [
   {
     id: 208,
     scheduledAt: '2026-04-01T18:45:00Z',
-    mode: 'quests',
-    deck: 'expansion_a',
+    mode: 'feast_for_crows',
+    deck: 'alternative',
     createdBy: 6,
     status: 'completed',
     planningNote: 'Проверяли новый состав на 5 игроков.',
@@ -404,7 +448,7 @@ const matchSeeds: Array<Parameters<typeof buildMatch>[0]> = [
     id: 209,
     scheduledAt: '2026-03-25T17:00:00Z',
     mode: 'classic',
-    deck: 'expansion_b',
+    deck: 'alternative',
     createdBy: 2,
     status: 'completed',
     planningNote: 'Решили играть быстрее, без долгих торгов.',
@@ -430,8 +474,8 @@ const matchSeeds: Array<Parameters<typeof buildMatch>[0]> = [
   {
     id: 210,
     scheduledAt: '2026-03-18T18:30:00Z',
-    mode: 'dragons',
-    deck: 'expansion_b',
+    mode: 'mother_of_dragons',
+    deck: 'alternative',
     createdBy: 8,
     status: 'completed',
     planningNote: 'Максимум игроков и хаоса.',
@@ -461,8 +505,8 @@ const matchSeeds: Array<Parameters<typeof buildMatch>[0]> = [
   {
     id: 211,
     scheduledAt: '2026-03-11T18:10:00Z',
-    mode: 'quests',
-    deck: 'expansion_a',
+    mode: 'feast_for_crows',
+    deck: 'alternative',
     createdBy: 5,
     status: 'completed',
     planningNote: 'Партия с акцентом на дипломатические сделки.',
@@ -515,7 +559,7 @@ const matchSeeds: Array<Parameters<typeof buildMatch>[0]> = [
     id: 213,
     scheduledAt: '2026-02-24T18:00:00Z',
     mode: 'classic',
-    deck: 'expansion_a',
+    deck: 'alternative',
     createdBy: 6,
     status: 'completed',
     planningNote: 'Быстрая вечерняя партия после работы.',
@@ -540,8 +584,8 @@ const matchSeeds: Array<Parameters<typeof buildMatch>[0]> = [
   {
     id: 214,
     scheduledAt: '2026-02-17T17:45:00Z',
-    mode: 'dragons',
-    deck: 'expansion_b',
+    mode: 'mother_of_dragons',
+    deck: 'alternative',
     createdBy: 8,
     status: 'completed',
     planningNote: 'Проверка большого стола на новом балансе.',
@@ -571,8 +615,8 @@ const matchSeeds: Array<Parameters<typeof buildMatch>[0]> = [
   {
     id: 215,
     scheduledAt: '2026-02-10T18:15:00Z',
-    mode: 'quests',
-    deck: 'expansion_b',
+    mode: 'feast_for_crows',
+    deck: 'alternative',
     createdBy: 7,
     status: 'completed',
     planningNote: 'Квесты и минимум компромиссов.',
@@ -623,8 +667,8 @@ const matchSeeds: Array<Parameters<typeof buildMatch>[0]> = [
   {
     id: 217,
     scheduledAt: '2026-01-23T18:10:00Z',
-    mode: 'quests',
-    deck: 'expansion_a',
+    mode: 'feast_for_crows',
+    deck: 'alternative',
     createdBy: 5,
     status: 'completed',
     planningNote: 'Партия для проверки новых хоум-правил по таймеру.',
@@ -649,8 +693,8 @@ const matchSeeds: Array<Parameters<typeof buildMatch>[0]> = [
   {
     id: 218,
     scheduledAt: '2026-01-16T17:55:00Z',
-    mode: 'dragons',
-    deck: 'expansion_b',
+    mode: 'mother_of_dragons',
+    deck: 'alternative',
     createdBy: 6,
     status: 'completed',
     planningNote: 'Репетиция перед февральским марафоном.',
@@ -681,7 +725,7 @@ const matchSeeds: Array<Parameters<typeof buildMatch>[0]> = [
   {
     id: 219,
     scheduledAt: '2026-01-08T18:30:00Z',
-    mode: 'alternative',
+    mode: 'dance_with_dragons',
     deck: 'original',
     createdBy: 4,
     status: 'completed',
@@ -707,7 +751,7 @@ const matchSeeds: Array<Parameters<typeof buildMatch>[0]> = [
     id: 220,
     scheduledAt: '2026-01-03T16:20:00Z',
     mode: 'classic',
-    deck: 'expansion_a',
+    deck: 'alternative',
     createdBy: 8,
     status: 'completed',
     planningNote: 'Первый матч года, играли без долгих остановок.',
@@ -899,7 +943,7 @@ export const mockFactionStats: FactionStats[] = mockFactions.map((faction, index
       { games: Math.max(1, Math.round(totalGames * 0.65)), mode: 'classic', winrate },
       {
         games: Math.max(1, Math.round(totalGames * 0.35)),
-        mode: 'quests',
+        mode: 'feast_for_crows',
         winrate: Math.max(0, winrate - 0.08),
       },
     ],

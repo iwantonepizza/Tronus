@@ -17,7 +17,11 @@ def test_faction_stats_returns_expected_aggregates(faction_stats_dataset) -> Non
     assert stats["avg_castles"] == pytest.approx(5.833, rel=1e-3)
     assert stats["by_mode"] == [
         {"mode": "classic", "games": 3, "winrate": pytest.approx(0.667, rel=1e-3)},
-        {"mode": "quests", "games": 3, "winrate": pytest.approx(0.333, rel=1e-3)},
+        {
+            "mode": "feast_for_crows",
+            "games": 3,
+            "winrate": pytest.approx(0.333, rel=1e-3),
+        },
     ]
     assert [row["user"].profile.nickname for row in stats["top_players"]] == [
         "alpha@example.com",

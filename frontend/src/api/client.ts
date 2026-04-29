@@ -39,14 +39,14 @@ function getBackendOrigin(): string {
   }
 
   if (import.meta.env.DEV) {
-    return 'http://localhost:8008'
+    return 'http://localhost:8000'
   }
 
   if (typeof window !== 'undefined') {
     return window.location.origin
   }
 
-  return 'http://localhost:8008'
+  return 'http://localhost:8000'
 }
 
 function buildUrl(path: string): string {

@@ -4,6 +4,77 @@
 
 ---
 
+## 2026-04-29 — Wave 5 — Phase 2 первая партия (12 задач)
+
+Review: `ai-docs/reviews/2026-04-29-batch-wave5.md`. Все 12 — approved.
+
+### Track A — Hotfixes
+
+### 2026-04-29 — F-104: Mobile viewport + iPhone safe-area
+- agent: codex — report: `ai-docs/reports/2026-04-29-F-104.md` — **approved**
+
+### 2026-04-29 — F-100: Match detail bugfixes (cancel + stubs)
+- agent: codex — report: `ai-docs/reports/2026-04-29-F-100.md` — **approved**
+
+### 2026-04-29 — T-114: Fix avatar URL (absolute + Vite /media proxy)
+- agent: codex — report: `ai-docs/reports/2026-04-29-T-114.md` — **approved**
+
+### Track B — Auth refactor
+
+### 2026-04-29 — T-112: Change password (logged-in)
+- agent: codex — report: `ai-docs/reports/2026-04-29-T-112.md` — **approved**
+
+### 2026-04-29 — T-111: Password reset via secret word
+- agent: codex — report: `ai-docs/reports/2026-04-29-T-111.md` — **approved**
+
+### 2026-04-29 — T-110: Registration с secret word + повтор пароля + auto-active
+- agent: codex — report: `ai-docs/reports/2026-04-29-T-110.md` — **approved**
+
+### 2026-04-29 — T-113: Login by email **или** nickname
+- agent: codex — report: `ai-docs/reports/2026-04-29-T-113.md` — **approved**
+
+### Track C — Reference & rules pivot
+
+### 2026-04-29 — T-118: Audit для удаления `expansion_a/b` (bonus)
+- agent: codex — report: `ai-docs/reports/2026-04-29-T-118.md` — **approved**
+
+### 2026-04-29 — T-115: Russian validation messages в backend
+- agent: codex — report: `ai-docs/reports/2026-04-29-T-115.md` — **approved**
+
+### 2026-04-29 — T-107: GameMode rules engine — `validate_session_setup`
+- agent: codex — report: `ai-docs/reports/2026-04-29-T-107.md` — **approved**
+
+### 2026-04-29 — T-106: House decks redesign (CR-006)
+- agent: codex — report: `ai-docs/reports/2026-04-29-T-106.md` — **approved**
+
+### 2026-04-29 — T-105: GameMode rules schema (ADR-0012)
+- agent: codex — report: `ai-docs/reports/2026-04-29-T-105.md` — **approved_with_comments**
+- notes: ArrayField требует Postgres — env-note, не архитектурная проблема. CI и dev-stack — Postgres, всё работает.
+
+---
+
+## 2026-04-27 — Wave 4 — Polish после Phase 1 (6 задач)
+
+### 2026-04-27 — F-015: Animation polish pass
+- agent: codex — report: `ai-docs/reports/2026-04-27-F-015.md` — **approved**
+
+### 2026-04-27 — I-004: Frontend CI workflow
+- agent: codex — report: `ai-docs/reports/2026-04-27-I-004.md` — **approved**
+
+### 2026-04-27 — T-081: Gunicorn в production deploy stack
+- agent: codex — report: `ai-docs/reports/2026-04-27-T-081.md` — **approved**
+
+### 2026-04-27 — T-080: Унификация enum AvatarAsset.style
+- agent: codex — report: `ai-docs/reports/2026-04-27-T-080.md` — **approved**
+
+### 2026-04-24 — F-016: Accessibility audit pass
+- agent: codex — report: `ai-docs/reports/2026-04-24-F-016.md` — **approved**
+
+### 2026-04-24 — T-082: pytest-cov coverage gate
+- agent: codex — report: `ai-docs/reports/2026-04-24-T-082.md` — **approved**
+
+---
+
 ## 2026-04-23 — Batch wave 3 (29 задач)
 
 Review: `ai-docs/reviews/2026-04-23-batch-wave3.md`

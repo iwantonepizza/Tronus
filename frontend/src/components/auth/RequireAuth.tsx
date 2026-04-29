@@ -7,9 +7,9 @@ export function RequireAuth() {
 
   if (isBootstrapping) {
     return (
-      <main className="flex min-h-screen items-center justify-center px-6">
+      <main className="flex min-h-[100dvh] items-center justify-center px-6">
         <div className="rounded-2xl border border-border-subtle bg-bg-elev1 px-6 py-4 text-sm text-text-secondary">
-          Checking session…
+          Проверяем сессию…
         </div>
       </main>
     )

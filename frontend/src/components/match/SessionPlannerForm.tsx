@@ -44,13 +44,13 @@ const entryModes: Array<{
     value: 'planned',
     label: 'Запланировать',
     description:
-      'Сохраняем будущую игру и идём в карточку planned-session.',
+      'Сохраняем будущую игру и идём в карточку запланированной партии.',
   },
   {
     value: 'played',
     label: 'Только что сыграли',
     description:
-      'Собираем состав и сразу переходим в finalize wizard.',
+      'Собираем состав и сразу переходим в мастер финализации.',
   },
 ]
 
@@ -239,7 +239,7 @@ export function SessionPlannerForm({
                 <p className="mt-2 font-display text-2xl text-text-primary">
                   {entryMode === 'planned'
                     ? 'Планируем заранее'
-                    : 'Сразу в finalize'}
+                    : 'Сразу к финализации'}
                 </p>
               </div>
             </div>
@@ -306,10 +306,10 @@ export function SessionPlannerForm({
             <div className="mt-5">
               <label className="space-y-2">
                 <span className="block font-mono text-xs uppercase tracking-[0.22em] text-text-secondary">
-                  Planning note
+                  Примечание к партии
                 </span>
                 <textarea
-                  aria-label="Planning note"
+                  aria-label="Примечание к партии"
                   value={planningNote}
                   onChange={(event) => setPlanningNote(event.target.value)}
                   rows={4}
@@ -376,7 +376,7 @@ export function SessionPlannerForm({
                           {player.nickname}
                         </p>
                         <p className="text-sm text-text-tertiary">
-                          favorite: {player.favoriteFaction ?? '—'}
+                          любит: {player.favoriteFaction ?? '—'}
                         </p>
                       </div>
                     </div>
@@ -414,14 +414,14 @@ export function SessionPlannerForm({
             <div className="flex items-center gap-2 text-gold">
               <ScrollText className="h-5 w-5" />
               <h2 className="font-display text-3xl text-text-primary">
-                Preview
+                Предпросмотр
               </h2>
             </div>
 
             <div className="mt-5 space-y-3">
               <PreviewRow
                 label="Статус"
-                value={entryMode === 'planned' ? 'planned' : 'played'}
+                value={entryMode === 'planned' ? 'запланирована' : 'сыграна'}
               />
               <PreviewRow
                 label="Режим"
@@ -447,8 +447,8 @@ export function SessionPlannerForm({
             </div>
             <p className="mt-4 text-sm leading-7 text-text-secondary">
               {entryMode === 'planned'
-                ? 'После сохранения откроется карточка planned-session, где можно будет править состав и следить за обсуждением.'
-                : 'После сохранения откроется wizard финализации: места, замки, детали игры и подтверждение.'}
+                ? 'После сохранения откроется карточка запланированной партии, где можно будет править состав и следить за обсуждением.'
+                : 'После сохранения откроется мастер финализации: места, замки, детали игры и подтверждение.'}
             </p>
 
             {submitError ? (

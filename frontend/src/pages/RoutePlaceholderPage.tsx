@@ -25,22 +25,22 @@ export function RoutePlaceholderPage({
         </p>
         <div className="mt-6 flex flex-wrap gap-3">
           <span className="rounded-full border border-border-subtle bg-bg-base px-4 py-2 font-mono text-xs text-text-secondary">
-            route: {location.pathname}
+            маршрут: {location.pathname}
           </span>
           <span className="rounded-full border border-border-subtle bg-bg-base px-4 py-2 font-mono text-xs text-text-secondary">
-            placeholder wired
+            заглушка подключена
           </span>
           <span className="rounded-full border border-border-subtle bg-bg-base px-4 py-2 font-mono text-xs text-text-secondary">
-            app shell active
+            shell активен
           </span>
         </div>
       </div>
 
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
         {[
-          'UI atoms will replace these blocks in F-004.',
-          'API data hooks will be added as backend endpoints arrive.',
-          'This page already participates in shared routing and responsive layout.',
+          'UI-атомы заменят эти блоки в следующей продуктовой задаче.',
+          'Хуки с API-данными появятся, когда дозреют нужные backend endpoints.',
+          'Эта страница уже встроена в общий роутинг и адаптивный layout.',
         ].map((note) => (
           <article
             key={note}

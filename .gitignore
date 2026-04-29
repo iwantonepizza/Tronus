@@ -32,3 +32,8 @@ frontend/vite-*.err.log
 .idea/
 .vscode/
 .DS_Store
+
+
+ # AI DOCS
+AGENTS.md
+ai-docs/

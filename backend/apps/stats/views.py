@@ -55,7 +55,7 @@ class ErrorHandlingMixin:
             details = getattr(exc, "message_dict", None) or {"non_field_errors": exc.messages}
             return build_error_response(
                 code="validation_error",
-                message="Validation error.",
+                message="Ошибка валидации.",
                 status_code=status.HTTP_400_BAD_REQUEST,
                 details=details,
             )
@@ -63,7 +63,7 @@ class ErrorHandlingMixin:
         if isinstance(exc, DRFValidationError):
             return build_error_response(
                 code="validation_error",
-                message="Validation error.",
+                message="Ошибка валидации.",
                 status_code=status.HTTP_400_BAD_REQUEST,
                 details=exc.detail,
             )
@@ -71,7 +71,7 @@ class ErrorHandlingMixin:
         if isinstance(exc, (Http404, ObjectDoesNotExist)):
             return build_error_response(
                 code="not_found",
-                message="Not found.",
+                message="Объект не найден.",
                 status_code=status.HTTP_404_NOT_FOUND,
             )
 
@@ -85,25 +85,25 @@ class StatsAPIView(ErrorHandlingMixin, APIView):
 class PlayerStatsDetailView(StatsAPIView):
     def get(self, request, user_id: int, *args, **kwargs) -> Response:
         stats = player_profile_stats(user_id=user_id)
-        return Response(PlayerStatsSerializer(stats).data)
+        return Response(PlayerStatsSerializer(stats, context={"request": request}).data)
 
 
 class FactionStatsListView(StatsAPIView):
     def get(self, request, *args, **kwargs) -> Response:
         stats = list_faction_stats()
-        return Response(FactionStatsSerializer(stats, many=True).data)
+        return Response(FactionStatsSerializer(stats, many=True, context={"request": request}).data)
 
 
 class FactionStatsDetailView(StatsAPIView):
     def get(self, request, slug: str, *args, **kwargs) -> Response:
         stats = faction_stats(faction_slug=slug)
-        return Response(FactionStatsSerializer(stats).data)
+        return Response(FactionStatsSerializer(stats, context={"request": request}).data)
 
 
 class OverviewStatsView(StatsAPIView):
     def get(self, request, *args, **kwargs) -> Response:
         stats = overview_stats()
-        return Response(OverviewStatsSerializer(stats).data)
+        return Response(OverviewStatsSerializer(stats, context={"request": request}).data)
 
 
 class LeaderboardStatsView(StatsAPIView):
@@ -115,7 +115,7 @@ class LeaderboardStatsView(StatsAPIView):
             metric=query_serializer.validated_data["metric"],
             limit=query_serializer.validated_data["limit"],
         )
-        return Response(LeaderboardStatsSerializer(stats).data)
+        return Response(LeaderboardStatsSerializer(stats, context={"request": request}).data)
 
 
 class HeadToHeadStatsView(StatsAPIView):
@@ -127,4 +127,4 @@ class HeadToHeadStatsView(StatsAPIView):
             user_a_id=query_serializer.validated_data["user_a"],
             user_b_id=query_serializer.validated_data["user_b"],
         )
-        return Response(HeadToHeadStatsSerializer(stats).data)
+        return Response(HeadToHeadStatsSerializer(stats, context={"request": request}).data)

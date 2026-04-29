@@ -33,7 +33,7 @@ export function NumberStepper({
         className={cn(
           'inline-flex h-9 w-9 items-center justify-center rounded-xl border border-border-subtle text-text-secondary transition hover:border-gold hover:text-gold disabled:cursor-not-allowed disabled:opacity-35',
         )}
-        aria-label="Decrease value"
+        aria-label="Уменьшить значение"
       >
         <Minus className="h-4 w-4" />
       </button>
@@ -45,7 +45,7 @@ export function NumberStepper({
         onClick={() => onChange(Math.min(max, value + 1))}
         disabled={incrementDisabled}
         className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-border-subtle text-text-secondary transition hover:border-gold hover:text-gold disabled:cursor-not-allowed disabled:opacity-35"
-        aria-label="Increase value"
+        aria-label="Увеличить значение"
       >
         <Plus className="h-4 w-4" />
       </button>

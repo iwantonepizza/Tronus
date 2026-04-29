@@ -26,11 +26,11 @@ class GameSessionAdmin(admin.ModelAdmin):
         "scheduled_at",
         "status",
         "mode",
-        "deck",
+        "house_deck",
         "created_by",
         "participant_count",
     )
-    list_filter = ("status", "mode", "deck", "scheduled_at")
+    list_filter = ("status", "mode", "house_deck", "scheduled_at")
     search_fields = (
         "planning_note",
         "created_by__email",
@@ -45,7 +45,7 @@ class GameSessionAdmin(admin.ModelAdmin):
         return (
             super()
             .get_queryset(request)
-            .select_related("mode", "deck", "created_by", "created_by__profile")
+            .select_related("mode", "house_deck", "created_by", "created_by__profile")
             .prefetch_related("participations")
         )
 

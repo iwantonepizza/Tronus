@@ -182,7 +182,7 @@ export function MatchesPage() {
     <main className="space-y-6">
       <header className="rounded-[2rem] border border-border-subtle bg-bg-elev1 p-6 shadow-panel">
         <p className="font-mono text-xs uppercase tracking-[0.24em] text-gold/80">
-          Matches Index
+          Архив партий
         </p>
         <div className="mt-4 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
           <div className="max-w-3xl">

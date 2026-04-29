@@ -24,7 +24,11 @@ const defaultAuthValue: AuthContextValue = {
     throw new Error('Not implemented in tests.')
   },
   logout: async () => {},
-  register: async () => ({ id: 1, status: 'pending_approval' }),
+  register: async () => ({
+    id: 1,
+    status: 'pending_approval',
+    auto_activated: false,
+  }),
   refreshUser: async () => null,
 }
 

@@ -16,7 +16,7 @@ def test_game_session_admin_has_owner_friendly_config() -> None:
     admin_instance = site._registry[GameSession]
 
     assert isinstance(admin_instance, GameSessionAdmin)
-    assert admin_instance.list_filter == ("status", "mode", "deck", "scheduled_at")
+    assert admin_instance.list_filter == ("status", "mode", "house_deck", "scheduled_at")
     assert admin_instance.raw_id_fields == ("created_by",)
     assert len(admin_instance.inlines) == 2
 

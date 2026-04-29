@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useForm } from 'react-hook-form'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { z } from 'zod'
 import { ApiError } from '@/api/client'
 import { useAuth } from '@/hooks/useAuth'
@@ -13,15 +13,27 @@ import {
   Tag,
 } from '@/pages/authShared'
 
-const registerSchema = z.object({
-  email: z.string().email('Введите корректный email.'),
-  password: z.string().min(8, 'Пароль должен быть не короче 8 символов.'),
-  nickname: z
-    .string()
-    .trim()
-    .min(3, 'Ник должен быть не короче 3 символов.')
-    .max(64, 'Ник не должен быть длиннее 64 символов.'),
-})
+const registerSchema = z
+  .object({
+    email: z.string().email('Введите корректный email.'),
+    password: z.string().min(8, 'Пароль должен быть не короче 8 символов.'),
+    password_repeat: z.string().min(1, 'Повторите пароль.'),
+    nickname: z
+      .string()
+      .trim()
+      .min(3, 'Ник должен быть не короче 3 символов.')
+      .max(64, 'Ник не должен быть длиннее 64 символов.'),
+    secret_word: z.string().optional(),
+  })
+  .superRefine((values, ctx) => {
+    if (values.password !== values.password_repeat) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['password_repeat'],
+        message: 'Пароли не совпадают.',
+      })
+    }
+  })
 
 type RegisterFormValues = z.infer<typeof registerSchema>
 
@@ -41,7 +53,9 @@ function mapValidationErrors(
     if (
       fieldName === 'email' ||
       fieldName === 'password' ||
-      fieldName === 'nickname'
+      fieldName === 'password_repeat' ||
+      fieldName === 'nickname' ||
+      fieldName === 'secret_word'
     ) {
       setError(fieldName, { message: issue.message })
     }
@@ -51,6 +65,7 @@ function mapValidationErrors(
 }
 
 export function RegisterPage() {
+  const navigate = useNavigate()
   const { register: registerUser } = useAuth()
   const [formError, setFormError] = useState<string | null>(null)
   const [pendingApproval, setPendingApproval] = useState(false)
@@ -63,7 +78,9 @@ export function RegisterPage() {
     defaultValues: {
       email: '',
       password: '',
+      password_repeat: '',
       nickname: '',
+      secret_word: '',
     },
   })
 
@@ -77,7 +94,13 @@ export function RegisterPage() {
     }
 
     try {
-      await registerUser(values)
+      const response = await registerUser(values)
+
+      if (response.auto_activated) {
+        navigate('/login', { replace: true })
+        return
+      }
+
       setPendingApproval(true)
     } catch (error) {
       if (error instanceof ApiError) {
@@ -86,7 +109,9 @@ export function RegisterPage() {
             if (
               field === 'email' ||
               field === 'password' ||
-              field === 'nickname'
+              field === 'password_repeat' ||
+              field === 'nickname' ||
+              field === 'secret_word'
             ) {
               setError(field, { message: messages[0] })
             }
@@ -103,31 +128,31 @@ export function RegisterPage() {
   }
 
   return (
-    <main className="mx-auto flex min-h-screen max-w-6xl items-center px-6 py-16 md:px-10">
+    <main className="mx-auto flex min-h-[100dvh] max-w-6xl items-center px-6 py-16 md:px-10">
       <section className="grid w-full gap-8 overflow-hidden rounded-[2rem] border border-border-subtle bg-bg-elev1/95 shadow-panel backdrop-blur lg:grid-cols-[1.1fr_0.9fr]">
         <div className="bg-glow px-8 py-10 md:px-10">
           <p className="font-mono text-xs uppercase tracking-[0.28em] text-gold/80">
-            Pending Approval
+            Ожидает подтверждения
           </p>
           <h1 className="mt-4 font-display text-4xl text-text-primary md:text-5xl">
             Регистрация игрока
           </h1>
           <p className="mt-4 max-w-xl text-base leading-7 text-text-secondary">
-            Новый пользователь создаётся неактивным. После отправки owner должен
-            подтвердить его через Django admin.
+            Новый пользователь создаётся неактивным. Если указать верное секретное
+            слово, аккаунт активируется сразу; иначе владелец подтвердит его позже.
           </p>
           <div className="mt-8 flex flex-wrap gap-3">
-            <Tag>email + nickname</Tag>
-            <Tag>owner approval</Tag>
-            <Tag>django admin</Tag>
-            <Tag>inline errors</Tag>
+            <Tag>email + ник</Tag>
+            <Tag>повтор пароля</Tag>
+            <Tag>секретное слово</Tag>
+            <Tag>ошибки в форме</Tag>
           </div>
         </div>
         <div className="px-8 py-10 md:px-10">
           {pendingApproval ? (
             <div className="space-y-4">
               <InlineMessage
-                message="Заявка отправлена. Теперь дождитесь подтверждения owner и затем войдите."
+                message="Заявка отправлена. Теперь дождитесь подтверждения владельца и затем войдите."
                 tone="success"
               />
               <Link
@@ -144,7 +169,7 @@ export function RegisterPage() {
               noValidate
             >
               <Field>
-                <Label htmlFor="register-email">Email</Label>
+                <Label htmlFor="register-email">Почта</Label>
                 <Input
                   id="register-email"
                   type="email"
@@ -160,7 +185,7 @@ export function RegisterPage() {
                 <Input
                   id="register-nickname"
                   type="text"
-                  placeholder="IronFist"
+                  placeholder="Ваш ник"
                   aria-invalid={errors.nickname ? 'true' : 'false'}
                   {...register('nickname')}
                 />
@@ -172,11 +197,35 @@ export function RegisterPage() {
                 <Input
                   id="register-password"
                   type="password"
-                  placeholder="StrongPassword123!"
+                  placeholder="Придумайте пароль"
                   aria-invalid={errors.password ? 'true' : 'false'}
                   {...register('password')}
                 />
                 <FieldError message={errors.password?.message} />
+              </Field>
+
+              <Field>
+                <Label htmlFor="register-password-repeat">Повтор пароля</Label>
+                <Input
+                  id="register-password-repeat"
+                  type="password"
+                  placeholder="Повторите пароль"
+                  aria-invalid={errors.password_repeat ? 'true' : 'false'}
+                  {...register('password_repeat')}
+                />
+                <FieldError message={errors.password_repeat?.message} />
+              </Field>
+
+              <Field>
+                <Label htmlFor="register-secret-word">Секретное слово</Label>
+                <Input
+                  id="register-secret-word"
+                  type="text"
+                  placeholder="секретное слово (опционально)"
+                  aria-invalid={errors.secret_word ? 'true' : 'false'}
+                  {...register('secret_word')}
+                />
+                <FieldError message={errors.secret_word?.message} />
               </Field>
 
               <InlineMessage message={formError} tone="error" />

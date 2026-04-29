@@ -4,6 +4,37 @@
 
 ## Unreleased
 
+### 2026-04-29 — Architect iteration 5 — Wave 5 closed, Wave 6 outlined
+
+- Batch-review Wave 5 (12 задач) — все приняты, T-105 с environment-комментарием.
+- Hotfixes Phase 2 устранены: avatar URL, mobile viewport, RSVP кнопки disabled-stub, cancel button рабочая.
+- Auth полностью переработан: secret word + repeat password + auto-active (T-110), password reset через секрет (T-111), change password (T-112), login по email или нику (T-113).
+- Reference layer переписан: `GameMode` с rule-fields (T-105), House decks → 2 варианта (T-106), `validate_session_setup` rules engine (T-107).
+- Все backend validation messages — на русском (T-115), Django переведён в `ru-ru`.
+- CR-006 закрыт через T-106.
+- Bonus T-118: вычистил остатки `expansion_a/b` из тестов и фронта.
+- Wave 6 выдана — фундамент Phase 2 round system: T-100 (lifecycle), T-101 (RoundSnapshot), T-120 (Invitations) + frontend двойник.
+
+### 2026-04-27 — Architect iteration 4 — Phase 2 pivot
+
+- Batch-review wave 4 (T-080, T-081, T-082, I-004, F-015, F-016) — все приняты, Phase 1 полностью закрыта.
+- Получен большой user feedback после первого реального теста MVP (см. `ai-docs/source/USER_FEEDBACK_2026-04-27.md`).
+- Создан анализ feedback с категоризацией: `ai-docs/source/USER_FEEDBACK_ANALYSIS_2026-04-27.md`.
+- Открыты 7 архитектурных решений:
+  - ADR-0009: расширенный lifecycle сессии (`planned → in_progress → completed`).
+  - ADR-0010: модель `RoundSnapshot` для трекинга треков игры.
+  - ADR-0011: event decks (Westeros) как захардкоженные карты.
+  - ADR-0012: game mode rules engine с правилами доступности фракций по режимам.
+  - ADR-0013: invitations & RSVP как отдельная модель `SessionInvite`.
+  - ADR-0014: единый timeline для событий партии + chronicler в чате.
+  - ADR-0015: русский язык, без i18n-библиотеки.
+- Открыты 2 change request:
+  - CR-006: redesign колод (House decks → 2 варианта; event decks отдельно).
+  - CR-007: finalize_session выводит победителя из RoundSnapshot, не принимает руками.
+- Полностью переписан `BACKLOG.md` под Phase 2 — 6 групп задач, ~30 новых tickets.
+- Wave 5 выдана агентам — 11 задач в 3 параллельных трека (hotfixes, auth refactor, rules pivot).
+- Чистка: удалён leftover `Tronus/`, кеш-папки, sqlite-файлы, vite-логи, dist.
+
 ### 2026-04-23 — Architect iteration 3
 
 - Batch-review 29 задач wave 3 (T-023..T-072, I-001..I-003, F-001..F-011) — все приняты.

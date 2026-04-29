@@ -12,15 +12,15 @@ export function PlayerProfilePage() {
   const statsQuery = usePlayerStats(Number.isFinite(userId) ? userId : undefined)
 
   if (statsQuery.isLoading) {
-    return <PageStatus title="Loading player profile..." />
+    return <PageStatus title="Загружаем профиль игрока..." />
   }
 
   if (statsQuery.isError || !statsQuery.data) {
     return (
       <EmptyState
         icon={<Trophy className="h-5 w-5" />}
-        title="Player was not found"
-        description="This profile is missing or hidden from public stats."
+        title="Игрок не найден"
+        description="Этот профиль отсутствует или скрыт из публичной статистики."
       />
     )
   }
@@ -31,7 +31,7 @@ export function PlayerProfilePage() {
     <main className="space-y-6">
       <header className="rounded-[2rem] border border-border-subtle bg-[radial-gradient(circle_at_top_left,_rgba(201,164,76,0.16),_transparent_34%),linear-gradient(135deg,_rgba(23,23,31,1),_rgba(14,14,18,0.98))] p-6 shadow-panel">
         <p className="font-mono text-xs uppercase tracking-[0.24em] text-gold/80">
-          Player Profile
+          Профиль игрока
         </p>
         <div className="mt-5 flex flex-col gap-5 md:flex-row md:items-end md:justify-between">
           <div>
@@ -43,8 +43,7 @@ export function PlayerProfilePage() {
                 <FactionBadge factionSlug={stats.favoriteFaction} />
               ) : null}
               <span className="rounded-full border border-border-subtle bg-bg-base px-3 py-2 text-sm text-text-secondary">
-                {stats.currentStreak.type ?? 'no'} streak x
-                {stats.currentStreak.count}
+                {formatStreak(stats.currentStreak.type, stats.currentStreak.count)}
               </span>
             </div>
           </div>
@@ -52,34 +51,34 @@ export function PlayerProfilePage() {
             to="/leaderboard"
             className="inline-flex h-11 items-center justify-center rounded-2xl border border-border-subtle px-4 text-sm font-semibold text-text-primary transition hover:border-gold hover:text-gold"
           >
-            Open leaderboard
+            Открыть таблицу
           </Link>
         </div>
       </header>
 
       <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-        <StatTile icon={<Trophy className="h-5 w-5" />} label="Wins" value={stats.wins} />
+        <StatTile icon={<Trophy className="h-5 w-5" />} label="Победы" value={stats.wins} />
         <StatTile
           icon={<Crown className="h-5 w-5" />}
-          label="Winrate"
+          label="Винрейт"
           value={formatPercent(stats.winrate)}
         />
-        <StatTile label="Average place" value={formatNumber(stats.avgPlace)} />
-        <StatTile label="Average castles" value={formatNumber(stats.avgCastles)} />
+        <StatTile label="Среднее место" value={formatNumber(stats.avgPlace)} />
+        <StatTile label="Средние замки" value={formatNumber(stats.avgCastles)} />
       </section>
 
       <section className="grid gap-6 lg:grid-cols-[0.9fr_1.1fr]">
         <div className="rounded-[2rem] border border-border-subtle bg-bg-elev1 p-6 shadow-panel">
-          <h2 className="font-display text-3xl text-text-primary">Faction form</h2>
+          <h2 className="font-display text-3xl text-text-primary">Форма по фракциям</h2>
           <div className="mt-5 grid gap-3">
-            <FactionStat label="Favorite" slug={stats.favoriteFaction} />
-            <FactionStat label="Best" slug={stats.bestFaction?.faction ?? null} />
-            <FactionStat label="Worst" slug={stats.worstFaction?.faction ?? null} />
+            <FactionStat label="Любимая" slug={stats.favoriteFaction} />
+            <FactionStat label="Лучшая" slug={stats.bestFaction?.faction ?? null} />
+            <FactionStat label="Худшая" slug={stats.worstFaction?.faction ?? null} />
           </div>
         </div>
 
         <div className="rounded-[2rem] border border-border-subtle bg-bg-elev1 p-6 shadow-panel">
-          <h2 className="font-display text-3xl text-text-primary">Recent form</h2>
+          <h2 className="font-display text-3xl text-text-primary">Последние партии</h2>
           <div className="mt-5 space-y-3">
             {stats.last10.map((entry) => (
               <Link
@@ -92,7 +91,7 @@ export function PlayerProfilePage() {
                 </span>
                 <FactionBadge factionSlug={entry.faction} size="sm" />
                 <span className="text-sm text-text-secondary">
-                  place {entry.place ?? '-'}
+                  место {entry.place ?? '-'}
                 </span>
               </Link>
             ))}
@@ -101,8 +100,8 @@ export function PlayerProfilePage() {
       </section>
 
       <section className="grid gap-4 md:grid-cols-2">
-        <VoteCard icon={<Crown className="h-5 w-5" />} label="Crowns received" value={stats.crownsReceived} />
-        <VoteCard icon={<Skull className="h-5 w-5" />} label="Shits received" value={stats.shitsReceived} />
+        <VoteCard icon={<Crown className="h-5 w-5" />} label="Получено корон" value={stats.crownsReceived} />
+        <VoteCard icon={<Skull className="h-5 w-5" />} label="Получено говен" value={stats.shitsReceived} />
       </section>
     </main>
   )
@@ -157,4 +156,12 @@ function formatPercent(value: number | null) {
 
 function formatNumber(value: number | null) {
   return value === null ? '-' : value.toFixed(2)
+}
+
+function formatStreak(type: 'win' | 'loss' | null, count: number) {
+  if (!type || count === 0) {
+    return 'Без текущей серии'
+  }
+
+  return `${type === 'win' ? 'Серия побед' : 'Серия поражений'} ×${count}`
 }

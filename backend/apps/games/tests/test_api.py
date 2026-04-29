@@ -8,7 +8,7 @@ from django.utils import timezone
 
 from apps.accounts.models import User
 from apps.games.models import GameSession, Outcome, Participation
-from apps.reference.models import Deck, Faction, GameMode
+from apps.reference.models import Faction, GameMode, HouseDeck
 
 
 def _ensure_reference_data() -> dict[str, object]:
@@ -20,7 +20,7 @@ def _ensure_reference_data() -> dict[str, object]:
             "max_players": 8,
         },
     )
-    original, _ = Deck.objects.get_or_create(
+    original, _ = HouseDeck.objects.get_or_create(
         slug="original",
         defaults={"name": "Original"},
     )
@@ -78,7 +78,7 @@ def _create_session(
     return GameSession.objects.create(
         scheduled_at=scheduled_at or (timezone.now() + timedelta(days=1)),
         mode=reference["classic"],
-        deck=reference["original"],
+        house_deck=reference["original"],
         created_by=created_by,
         status=status,
     )
@@ -217,6 +217,29 @@ def test_create_session_creates_planned_session_for_player(api_client) -> None:
     assert response.json()["id"] == session.pk
     assert response.json()["status"] == GameSession.Status.PLANNED
     assert session.planning_note == "Plan the map."
+
+
+@pytest.mark.django_db
+def test_create_session_rejects_unknown_house_deck_slug(api_client) -> None:
+    _ensure_reference_data()
+    creator = _create_user(email="creator@example.com")
+    _grant_player_role(user=creator)
+    assert api_client.login(username=creator.username, password="StrongPassword123!")
+
+    response = api_client.post(
+        "/api/v1/sessions/",
+        {
+            "scheduled_at": (timezone.now() + timedelta(days=2)).isoformat(),
+            "mode": "classic",
+            "deck": "legacy_removed_deck",
+            "planning_note": "Test",
+        },
+        format="json",
+    )
+
+    assert response.status_code == 400
+    assert response.json()["error"]["code"] == "validation_error"
+    assert "deck" in response.json()["error"]["details"]
 
 
 @pytest.mark.django_db
@@ -439,7 +462,7 @@ def test_update_participant_returns_validation_error_shape(api_client) -> None:
     assert response.status_code == 400
     assert response.json()["error"]["code"] == "validation_error"
     assert response.json()["error"]["details"]["faction"] == [
-        "This faction is already taken in the session."
+        "Эта фракция уже занята в партии."
     ]
     assert locked_participation.pk != target_participation.pk
 

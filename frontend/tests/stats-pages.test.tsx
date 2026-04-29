@@ -225,8 +225,8 @@ describe('stats pages', () => {
     )
 
     expect(await screen.findByRole('heading', { name: 'IronFist' })).toBeInTheDocument()
-    expect(screen.getByText('Crowns received')).toBeInTheDocument()
-    expect(screen.getByText('Recent form')).toBeInTheDocument()
+    expect(screen.getByText('Получено корон')).toBeInTheDocument()
+    expect(screen.getByText('Последние партии')).toBeInTheDocument()
   })
 
   it('renders leaderboard rows from stats hook data', async () => {
@@ -236,7 +236,7 @@ describe('stats pages', () => {
       </MemoryRouter>,
     )
 
-    expect(await screen.findByRole('heading', { name: /Season ratings/i })).toBeInTheDocument()
+    expect(await screen.findByRole('heading', { name: /Рейтинги сезона/i })).toBeInTheDocument()
     expect(screen.getByText('IronFist')).toBeInTheDocument()
     expect(screen.getByText('73%')).toBeInTheDocument()
   })
@@ -248,7 +248,7 @@ describe('stats pages', () => {
       </MemoryRouter>,
     )
 
-    expect(await screen.findByRole('heading', { name: /Metagame map/i })).toBeInTheDocument()
+    expect(await screen.findByRole('heading', { name: /Карта меты/i })).toBeInTheDocument()
     expect(screen.getByRole('heading', { name: 'Lannister' })).toBeInTheDocument()
 
     renderWithProviders(
@@ -259,8 +259,8 @@ describe('stats pages', () => {
       </MemoryRouter>,
     )
 
-    expect(await screen.findByText('Winrate by mode')).toBeInTheDocument()
-    expect(screen.getByText('Best players')).toBeInTheDocument()
+    expect(await screen.findByText('Винрейт по режимам')).toBeInTheDocument()
+    expect(screen.getByText('Лучшие игроки')).toBeInTheDocument()
     expect(screen.getAllByText('Lannister').length).toBeGreaterThan(0)
   })
 
@@ -275,10 +275,10 @@ describe('stats pages', () => {
     )
 
     expect(
-      await screen.findByRole('heading', { name: /Player comparison/i }),
+      await screen.findByRole('heading', { name: /Сравнение игроков/i }),
     ).toBeInTheDocument()
-    expect(screen.getByText('Games together')).toBeInTheDocument()
-    expect(screen.getByText('Shared matches')).toBeInTheDocument()
-    expect(screen.getByRole('link', { name: 'Match #77' })).toBeInTheDocument()
+    expect(screen.getByText('Партий вместе')).toBeInTheDocument()
+    expect(screen.getByText('Общие партии')).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'Партия #77' })).toBeInTheDocument()
   })
 })

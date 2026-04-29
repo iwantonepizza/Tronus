@@ -61,8 +61,8 @@ export function EditSessionPage() {
     return (
       <EmptyState
         icon={<ShieldAlert className="h-5 w-5" />}
-        title="Редактирование доступно только для planned-session"
-        description="Завершённые и отменённые партии уже нельзя менять через planning-flow."
+        title="Редактирование доступно только для запланированной партии"
+        description="Завершённые и отменённые партии уже нельзя менять через сценарий планирования."
         cta={
           <Button variant="secondary" onClick={() => navigate(`/matches/${match.id}`)}>
             Открыть карточку партии
@@ -76,8 +76,8 @@ export function EditSessionPage() {
     <SessionPlannerForm
       allowEntryModeToggle={false}
       decks={referenceData.decks}
-      description="Prefilled-форма planned-session. Здесь можно перенастроить режим, состав и заметки до момента финализации."
-      eyebrow="Edit Session"
+      description="Предзаполненная форма запланированной партии. Здесь можно перенастроить режим, состав и заметки до момента финализации."
+      eyebrow="Редактирование партии"
       factions={referenceData.factions}
       initialDraft={{
         id: match.id,

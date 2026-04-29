@@ -74,8 +74,8 @@ export function CreateSessionPage() {
   return (
     <SessionPlannerForm
       decks={referenceData.decks}
-      description="Экран создания сессии. Можно собрать состав, выбрать режим и либо запланировать матч, либо сразу прыгнуть в finalize-flow."
-      eyebrow="Create Session"
+      description="Экран создания сессии. Можно собрать состав, выбрать режим и либо запланировать партию, либо сразу перейти к финализации."
+      eyebrow="Создание партии"
       factions={referenceData.factions}
       initialDraft={initialDraft}
       isSubmitting={createSessionMutation.isPending}

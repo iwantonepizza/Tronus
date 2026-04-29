@@ -1,6 +1,7 @@
 import { fireEvent, screen } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { changePassword } from '@/api/auth'
 import {
   useAvatars,
   useDeleteAvatar,
@@ -13,6 +14,14 @@ import { useReferenceData } from '@/hooks/useReferenceData'
 import { AvatarGeneratorPage } from '@/pages/AvatarGeneratorPage'
 import { MyProfilePage } from '@/pages/MyProfilePage'
 import { renderWithProviders } from './renderWithProviders'
+
+vi.mock('@/api/auth', async () => {
+  const actual = await vi.importActual<typeof import('@/api/auth')>('@/api/auth')
+  return {
+    ...actual,
+    changePassword: vi.fn(),
+  }
+})
 
 vi.mock('@/hooks/useCurrentUser', () => ({
   useCurrentUser: vi.fn(),
@@ -40,9 +49,11 @@ const mockedUseAvatars = vi.mocked(useAvatars)
 const mockedUseGenerateAvatar = vi.mocked(useGenerateAvatar)
 const mockedUseSetCurrentAvatar = vi.mocked(useSetCurrentAvatar)
 const mockedUseDeleteAvatar = vi.mocked(useDeleteAvatar)
+const mockedChangePassword = vi.mocked(changePassword)
 
 describe('profile pages', () => {
   beforeEach(() => {
+    mockedChangePassword.mockReset()
     mockedUseCurrentUser.mockReturnValue({
       data: {
         id: 1,
@@ -135,16 +146,16 @@ describe('profile pages', () => {
       </MemoryRouter>,
     )
 
-    fireEvent.change(screen.getByLabelText('Nickname'), {
+    fireEvent.change(screen.getByLabelText('Ник'), {
       target: { value: 'LionLord' },
     })
-    fireEvent.change(screen.getByLabelText('Bio'), {
+    fireEvent.change(screen.getByLabelText('О себе'), {
       target: { value: 'Still owns the Iron Bank.' },
     })
-    fireEvent.change(screen.getByLabelText('Favorite faction'), {
+    fireEvent.change(screen.getByLabelText('Любимая фракция'), {
       target: { value: 'stark' },
     })
-    fireEvent.click(screen.getByRole('button', { name: /Save profile/i }))
+    fireEvent.click(screen.getByRole('button', { name: /Сохранить профиль/i }))
 
     expect(updateMock).toHaveBeenCalledWith({
       nickname: 'LionLord',
@@ -169,18 +180,45 @@ describe('profile pages', () => {
 
     const file = new File(['avatar'], 'avatar.png', { type: 'image/png' })
 
-    fireEvent.change(screen.getByLabelText('Faction'), {
+    fireEvent.change(screen.getByLabelText('Фракция'), {
       target: { value: 'stark' },
     })
-    fireEvent.change(screen.getByLabelText('Photo'), {
+    fireEvent.change(screen.getByLabelText('Фото'), {
       target: { files: [file] },
     })
-    fireEvent.click(screen.getByRole('button', { name: /Generate avatar/i }))
+    fireEvent.click(screen.getByRole('button', { name: /Создать аватар/i }))
 
     expect(generateMock).toHaveBeenCalledWith({
       faction: 'stark',
       photo: file,
     })
-    expect(screen.getByText('Avatar history')).toBeInTheDocument()
+    expect(screen.getByText('История аватаров')).toBeInTheDocument()
+  })
+
+  it('submits password change from my profile page', () => {
+    mockedChangePassword.mockResolvedValue({ status: 'password_changed' })
+
+    renderWithProviders(
+      <MemoryRouter>
+        <MyProfilePage />
+      </MemoryRouter>,
+    )
+
+    fireEvent.change(screen.getByLabelText('Текущий пароль'), {
+      target: { value: 'StrongPassword123!' },
+    })
+    fireEvent.change(screen.getByLabelText('Новый пароль'), {
+      target: { value: 'NewStrongPassword123!' },
+    })
+    fireEvent.change(screen.getByLabelText('Повтор нового пароля'), {
+      target: { value: 'NewStrongPassword123!' },
+    })
+    fireEvent.click(screen.getByRole('button', { name: /Сменить пароль/i }))
+
+    expect(mockedChangePassword).toHaveBeenCalledWith({
+      current_password: 'StrongPassword123!',
+      new_password: 'NewStrongPassword123!',
+      new_password_repeat: 'NewStrongPassword123!',
+    })
   })
 })

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from django.contrib import admin
 
-from .models import Deck, Faction, GameMode
+from .models import Faction, GameMode, HouseDeck
 
 
 @admin.register(Faction)
@@ -15,14 +15,21 @@ class FactionAdmin(admin.ModelAdmin):
 
 @admin.register(GameMode)
 class GameModeAdmin(admin.ModelAdmin):
-    list_display = ("name", "slug", "min_players", "max_players")
+    list_display = (
+        "name",
+        "slug",
+        "min_players",
+        "max_players",
+        "max_rounds",
+        "westeros_deck_count",
+    )
     search_fields = ("name", "slug")
     list_filter = ("min_players", "max_players")
     ordering = ("name",)
 
 
-@admin.register(Deck)
-class DeckAdmin(admin.ModelAdmin):
+@admin.register(HouseDeck)
+class HouseDeckAdmin(admin.ModelAdmin):
     list_display = ("name", "slug")
     search_fields = ("name", "slug")
     ordering = ("name",)

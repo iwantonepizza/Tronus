@@ -1,5 +1,4 @@
 import { useMemo, useState } from 'react'
-import { motion } from 'framer-motion'
 import { ImagePlus, ShieldAlert, Sparkles, Trash2 } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { EmptyState } from '@/components/ui/EmptyState'
@@ -31,11 +30,11 @@ export function AvatarGeneratorPage() {
 
   const factionOptions = useMemo(() => {
     if (!referenceQuery.data) {
-      return [{ label: 'Loading factions...', value: '' }]
+      return [{ label: 'Загружаем фракции...', value: '' }]
     }
 
     return [
-      { label: 'Select faction', value: '' },
+      { label: 'Выберите фракцию', value: '' },
       ...referenceQuery.data.factions.map((faction) => ({
         label: faction.name,
         value: faction.slug,
@@ -48,7 +47,7 @@ export function AvatarGeneratorPage() {
       <main className="space-y-6">
         <section className="rounded-[2rem] border border-border-subtle bg-bg-elev1 p-6 shadow-panel">
           <p className="font-display text-3xl text-text-primary">
-            Loading avatar studio...
+            Загружаем мастерскую аватаров...
           </p>
         </section>
       </main>
@@ -59,8 +58,8 @@ export function AvatarGeneratorPage() {
     return (
       <EmptyState
         icon={<ShieldAlert className="h-5 w-5" />}
-        title="Avatar studio is unavailable"
-        description="The frontend could not load profile or avatar data required for generation."
+        title="Мастерская аватаров недоступна"
+        description="Фронт не смог загрузить профиль или данные аватаров, нужные для генерации."
       />
     )
   }
@@ -69,16 +68,16 @@ export function AvatarGeneratorPage() {
     <main className="space-y-6">
       <section className="rounded-[2rem] border border-border-subtle bg-[radial-gradient(circle_at_top_left,_rgba(91,45,138,0.18),_transparent_34%),linear-gradient(135deg,_rgba(23,23,31,1),_rgba(14,14,18,0.98))] p-6 shadow-panel">
         <p className="font-mono text-xs uppercase tracking-[0.28em] text-gold/80">
-          Avatar Studio
+          Мастерская аватаров
         </p>
         <div className="mt-5 flex flex-col gap-5 md:flex-row md:items-end md:justify-between">
           <div>
             <h1 className="font-display text-4xl text-text-primary md:text-5xl">
-              Generate faction-framed avatars
+              Генерируйте аватары с рамкой фракции
             </h1>
             <p className="mt-4 max-w-3xl text-base leading-7 text-text-secondary">
-              Upload a photo, choose a faction, and generate a framed avatar
-              through the live backend pipeline from `T-050`.
+              Загрузите фото, выберите фракцию и соберите новый аватар через
+              живой backend pipeline из `T-050`.
             </p>
           </div>
           <CurrentAvatarBadge nickname={user.nickname} src={user.current_avatar} />
@@ -90,7 +89,7 @@ export function AvatarGeneratorPage() {
           <div className="flex items-center gap-3">
             <Sparkles className="h-5 w-5 text-gold" />
             <h2 className="font-display text-3xl text-text-primary">
-              Generate new avatar
+              Создать новый аватар
             </h2>
           </div>
 
@@ -110,13 +109,13 @@ export function AvatarGeneratorPage() {
                   photo: selectedPhoto,
                 })
                 .then(() => {
-                  setFeedbackMessage('Avatar generated. You can now set it as current.')
+                  setFeedbackMessage('Аватар создан. Теперь его можно сделать текущим.')
                   setSelectedPhoto(null)
                 })
             }}
           >
             <Select
-              label="Faction"
+              label="Фракция"
               value={selectedFaction}
               onChange={(event) =>
                 setSelectedFaction(event.target.value as FactionSlug | '')
@@ -124,31 +123,8 @@ export function AvatarGeneratorPage() {
               options={factionOptions}
             />
 
-            {/* Animated faction color swatch — interpolates on faction change */}
-            {selectedFaction ? (() => {
-              const factionColor = referenceQuery.data?.factions.find(
-                (f) => f.slug === selectedFaction,
-              )?.color ?? '#d4af37'
-              return (
-                <motion.div
-                  className="flex items-center gap-3 rounded-2xl border border-border-subtle px-4 py-2"
-                  animate={{ borderColor: factionColor }}
-                  transition={{ duration: 0.3, ease: 'easeOut' }}
-                >
-                  <motion.span
-                    className="h-4 w-4 flex-shrink-0 rounded-full"
-                    animate={{ backgroundColor: factionColor }}
-                    transition={{ duration: 0.3, ease: 'easeOut' }}
-                  />
-                  <span className="text-sm text-text-secondary">
-                    {referenceQuery.data?.factions.find((f) => f.slug === selectedFaction)?.name ?? selectedFaction}
-                  </span>
-                </motion.div>
-              )
-            })() : null}
-
             <Input
-              label="Photo"
+              label="Фото"
               type="file"
               accept="image/png,image/jpeg,image/webp"
               onChange={(event) => {
@@ -158,8 +134,8 @@ export function AvatarGeneratorPage() {
             />
 
             <div className="rounded-2xl border border-border-subtle bg-bg-base px-4 py-3 text-sm text-text-secondary">
-              Limits: JPEG/PNG/WEBP, max 10 MB. The backend crops to square,
-              renders `512x512`, and stores avatar history.
+              Ограничения: JPEG/PNG/WEBP, до 10 МБ. Бэкенд обрезает фото в
+              квадрат, рендерит `512x512` и хранит историю аватаров.
             </div>
 
             {formError ? (
@@ -179,14 +155,14 @@ export function AvatarGeneratorPage() {
               iconLeft={<ImagePlus className="h-4 w-4" />}
               disabled={!selectedFaction || !selectedPhoto || generateMutation.isPending}
             >
-              {generateMutation.isPending ? 'Generating...' : 'Generate avatar'}
+              {generateMutation.isPending ? 'Генерируем...' : 'Создать аватар'}
             </Button>
           </form>
         </section>
 
         <section className="rounded-[2rem] border border-border-subtle bg-bg-elev1 p-6 shadow-panel">
           <h2 className="font-display text-3xl text-text-primary">
-            Avatar history
+            История аватаров
           </h2>
 
           {avatarsQuery.data && avatarsQuery.data.length > 0 ? (
@@ -212,12 +188,12 @@ export function AvatarGeneratorPage() {
                           {faction?.name ?? avatar.faction}
                         </p>
                         <p className="mt-1 text-sm text-text-secondary">
-                          {avatar.isCurrent ? 'Current avatar' : avatar.style}
+                          {avatar.isCurrent ? 'Текущий аватар' : avatar.style}
                         </p>
                       </div>
                       {avatar.isCurrent ? (
                         <span className="rounded-full bg-gold/15 px-3 py-1 text-xs font-medium text-gold">
-                          Current
+                          Текущий
                         </span>
                       ) : null}
                     </div>
@@ -229,7 +205,7 @@ export function AvatarGeneratorPage() {
                           onClick={() => void setCurrentMutation.mutateAsync(avatar.id)}
                           disabled={setCurrentMutation.isPending}
                         >
-                          Make current
+                          Сделать текущим
                         </Button>
                       ) : null}
                       <Button
@@ -239,7 +215,7 @@ export function AvatarGeneratorPage() {
                         onClick={() => void deleteMutation.mutateAsync(avatar.id)}
                         disabled={deleteMutation.isPending}
                       >
-                        Delete
+                        Удалить
                       </Button>
                     </div>
                   </article>
@@ -250,8 +226,8 @@ export function AvatarGeneratorPage() {
             <div className="mt-6">
               <EmptyState
                 icon={<ImagePlus className="h-5 w-5" />}
-                title="No generated avatars yet"
-                description="Upload the first photo on the left to create the initial framed avatar."
+                title="Пока нет созданных аватаров"
+                description="Загрузите первое фото слева, чтобы собрать стартовый аватар в рамке."
               />
             </div>
           )}
@@ -272,7 +248,7 @@ function CurrentAvatarBadge({
     return (
       <img
         src={src}
-        alt={`${nickname} current avatar`}
+        alt={`Текущий аватар игрока ${nickname}`}
         className="h-24 w-24 rounded-[1.75rem] border border-border-subtle object-cover"
       />
     )

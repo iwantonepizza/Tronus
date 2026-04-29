@@ -57,7 +57,9 @@ def test_cast_vote_rejects_non_participant_sender(
             vote_type=MatchVote.VoteType.CROWN,
         )
 
-    assert exc_info.value.message_dict == {"from_user": ["Only session participants can vote."]}
+    assert exc_info.value.message_dict == {
+        "from_user": ["Голосовать могут только участники партии."]
+    }
 
 
 @pytest.mark.django_db
@@ -75,7 +77,7 @@ def test_cast_vote_rejects_self_vote(make_user, make_completed_session, add_part
             vote_type=MatchVote.VoteType.CROWN,
         )
 
-    assert exc_info.value.message_dict == {"to_user": ["You cannot vote for yourself."]}
+    assert exc_info.value.message_dict == {"to_user": ["Нельзя голосовать за самого себя."]}
 
 
 @pytest.mark.django_db
@@ -106,7 +108,7 @@ def test_cast_vote_rejects_duplicate_pair(
         )
 
     assert exc_info.value.message_dict == {
-        "vote": ["You have already voted for this player in the session."]
+        "vote": ["Вы уже голосовали за этого игрока в этой партии."]
     }
 
 
@@ -134,7 +136,7 @@ def test_cast_vote_rejects_non_completed_session(
         )
 
     assert exc_info.value.message_dict == {
-        "session": ["Votes are allowed only for completed sessions."]
+        "session": ["Голосовать можно только в завершённых партиях."]
     }
 
 
@@ -187,7 +189,7 @@ def test_update_vote_rejects_after_window_for_non_admin(
     with pytest.raises(ValidationError) as exc_info:
         update_vote(vote=vote, vote_type=MatchVote.VoteType.SHIT)
 
-    assert exc_info.value.message_dict == {"vote": ["Vote editing window has expired."]}
+    assert exc_info.value.message_dict == {"vote": ["Окно для изменения голоса уже истекло."]}
 
 
 @pytest.mark.django_db

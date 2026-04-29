@@ -22,8 +22,8 @@ docker compose -f docker-compose.prod.yml up --build
 
 Это именно `draft`, а не финальный production-hardening:
 
-- backend запускается через `gunicorn` (3 workers, timeout 60s)
+- backend пока запускается через `runserver`, потому что в проект ещё не добавлялся отдельный WSGI/ASGI сервер
 - секреты и пароли в `.example` файлах — заглушки
 - HTTPS/TLS и внешний ingress не настроены
 
-Перед реальным деплоем нужно заменить секреты и включить secure-cookie настройки.
+Перед реальным деплоем нужно заменить секреты, включить secure-cookie настройки и перевести backend на нормальный app server.

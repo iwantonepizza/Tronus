@@ -1,6 +1,9 @@
 from __future__ import annotations
 
 import pytest
+from django.core.files.uploadedfile import SimpleUploadedFile
+
+from apps.avatars.models import AvatarAsset
 
 
 @pytest.mark.django_db
@@ -18,6 +21,39 @@ def test_player_stats_endpoint_is_public(api_client, player_stats_dataset) -> No
     assert payload["current_streak"] == {"type": "win", "count": 1}
     assert payload["crowns_received"] == 4
     assert payload["shits_received"] == 2
+
+
+@pytest.mark.django_db
+def test_player_stats_endpoint_returns_absolute_current_avatar_url(
+    api_client,
+    player_stats_dataset,
+    settings,
+    tmp_path,
+) -> None:
+    target = player_stats_dataset["target"]
+    faction = target.profile.favorite_faction or target.participations.first().faction
+    media_root = tmp_path / "media"
+    media_root.mkdir(parents=True, exist_ok=True)
+    settings.MEDIA_ROOT = media_root
+    settings.MEDIA_URL = "/media/"
+
+    avatar = AvatarAsset.objects.create(
+        user=target,
+        faction=faction,
+        generated_image=SimpleUploadedFile(
+            "player-avatar.png",
+            b"player-avatar-bytes",
+            content_type="image/png",
+        ),
+        is_current=True,
+    )
+    target.profile.current_avatar = avatar
+    target.profile.save(update_fields=["current_avatar"])
+
+    response = api_client.get(f"/api/v1/stats/players/{target.pk}/")
+
+    assert response.status_code == 200
+    assert response.json()["user"]["current_avatar"].startswith("http://testserver/media/avatars/")
 
 
 @pytest.mark.django_db

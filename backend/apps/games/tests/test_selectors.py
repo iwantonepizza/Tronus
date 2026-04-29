@@ -13,7 +13,7 @@ from apps.games.selectors import (
     list_recent_completed,
     list_sessions,
 )
-from apps.reference.models import Deck, Faction, GameMode
+from apps.reference.models import Faction, GameMode, HouseDeck
 
 
 def _ensure_reference_data() -> dict[str, object]:
@@ -25,7 +25,7 @@ def _ensure_reference_data() -> dict[str, object]:
             "max_players": 8,
         },
     )
-    original, _ = Deck.objects.get_or_create(
+    original, _ = HouseDeck.objects.get_or_create(
         slug="original",
         defaults={"name": "Original"},
     )
@@ -77,7 +77,7 @@ def _create_session(
     return GameSession.objects.create(
         scheduled_at=scheduled_at,
         mode=reference["classic"],
-        deck=reference["original"],
+        house_deck=reference["original"],
         created_by=created_by,
         status=status,
     )

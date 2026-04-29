@@ -12,14 +12,25 @@ class MatchComment(TimestampedModel):
         on_delete=models.CASCADE,
         related_name="comments",
     )
+    # null = system/chronicler message; non-null = player comment
     author = models.ForeignKey(
         "accounts.User",
         on_delete=models.PROTECT,
         related_name="match_comments",
+        null=True,
+        blank=True,
     )
     body = models.TextField(validators=[MaxLengthValidator(2000)])
     edited_at = models.DateTimeField(null=True, blank=True)
     is_deleted = models.BooleanField(default=False)
+    # ADR-0014: link to timeline event if created by the chronicler
+    chronicler_event = models.ForeignKey(
+        "games.MatchTimelineEvent",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="chronicler_messages",
+    )
 
     class Meta:
         ordering = ["-created_at", "-pk"]
@@ -29,4 +40,5 @@ class MatchComment(TimestampedModel):
         ]
 
     def __str__(self) -> str:
-        return f"Comment #{self.pk} by {self.author.profile.nickname} in session #{self.session_id}"
+        name = self.author.profile.nickname if self.author_id else "Chronicler"
+        return f"Comment #{self.pk} by {name} in session #{self.session_id}"
