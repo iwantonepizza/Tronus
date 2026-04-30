@@ -1,16 +1,22 @@
 import { motion } from 'framer-motion'
 import { NavLink, useLocation } from 'react-router-dom'
 import { PRIMARY_NAV_ITEMS, QUICK_CREATE } from '@/components/layout/navigation'
+import { useAuth } from '@/hooks/useAuth'
 import { cn } from '@/lib/cn'
 
 export function Sidebar() {
   const location = useLocation()
+  const { user } = useAuth()
   const CreateIcon = QUICK_CREATE.icon
+  const isAdmin = Boolean(user?.is_staff || user?.is_superuser)
+  const visibleItems = PRIMARY_NAV_ITEMS.filter(
+    (item) => !item.adminOnly || isAdmin,
+  )
 
   return (
     <aside className="sticky top-16 hidden h-[calc(100dvh-4rem)] w-60 flex-col border-r border-border-subtle bg-bg-base lg:flex">
       <nav className="flex-1 space-y-1 overflow-y-auto px-3 py-5">
-        {PRIMARY_NAV_ITEMS.map((item) => {
+        {visibleItems.map((item) => {
           const ItemIcon = item.icon
           const isActive = item.match(location.pathname)
 

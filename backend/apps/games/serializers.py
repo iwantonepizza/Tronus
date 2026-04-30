@@ -149,6 +149,32 @@ class FinalizeSessionSerializer(serializers.Serializer):
     final_note = serializers.CharField(required=False, allow_blank=True, default="")
 
 
+class FinalizePlayedResultItemSerializer(serializers.Serializer):
+    user_id = serializers.IntegerField(min_value=1)
+    faction_slug = serializers.SlugField()
+    place = serializers.IntegerField(min_value=1)
+    castles = serializers.IntegerField(min_value=0, max_value=7, required=False, default=0)
+
+
+class FinalizePlayedSessionSerializer(serializers.Serializer):
+    """Payload for retroactive ('played') session finalization."""
+
+    results = FinalizePlayedResultItemSerializer(many=True)
+    rounds_played = serializers.IntegerField(min_value=1, required=False, default=1)
+    end_reason = serializers.ChoiceField(
+        choices=Outcome.EndReason.choices,
+        required=False,
+        default=Outcome.EndReason.OTHER,
+    )
+    mvp = serializers.PrimaryKeyRelatedField(
+        queryset=User.objects.filter(is_active=True),
+        allow_null=True,
+        required=False,
+        default=None,
+    )
+    final_note = serializers.CharField(required=False, allow_blank=True, default="")
+
+
 class SessionStartSerializer(serializers.Serializer):
     class AssignmentItemSerializer(serializers.Serializer):
         user_id = serializers.IntegerField(min_value=1)

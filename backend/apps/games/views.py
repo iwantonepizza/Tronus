@@ -26,6 +26,7 @@ from .serializers import (
     ClashOfKingsSerializer,
     CompleteRoundSerializer,
     EventCardPlayedSerializer,
+    FinalizePlayedSessionSerializer,
     FinalizeSessionSerializer,
     InviteUserSerializer,
     MatchTimelineEventSerializer,
@@ -110,7 +111,28 @@ class ErrorHandlingMixin:
                 status_code=status.HTTP_404_NOT_FOUND,
             )
 
-        return super().handle_exception(exc)
+        # Any unexpected exception: log it loudly and return a structured 500
+        # so the frontend can show a usable message instead of a blank
+        # `Internal Server Error`. This catches AttributeError / TypeError
+        # / IntegrityError surprises that historically left users staring at
+        # opaque 500s.
+        import logging
+        import traceback
+
+        logger = logging.getLogger("apps.games.views")
+        logger.exception("Unhandled exception in games view: %s", exc)
+        return build_error_response(
+            code="server_error",
+            message="Внутренняя ошибка сервера. Попробуйте ещё раз; если проблема повторяется — пришлите этот код администратору.",
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            details={
+                "exception_class": exc.__class__.__name__,
+                "exception_message": str(exc)[:500],
+                # Truncated traceback — useful for owner debugging on a
+                # closed-group app, never exposed to the public internet.
+                "trace_tail": traceback.format_exc().splitlines()[-5:],
+            },
+        )
 
 
 class GamesCursorPagination(pagination.CursorPagination):
@@ -475,6 +497,31 @@ class SessionFinalizeView(GamesAPIView):
         serializer = FinalizeSessionSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         outcome = services.finalize_session(session=session, **serializer.validated_data)
+        detailed = selectors.get_session_detail(session_id=outcome.session_id)
+        return Response(SessionDetailSerializer(detailed).data, status=status.HTTP_201_CREATED)
+
+
+# ──────────────────────────────────────────────────────────────────────────────
+# Wave 9 — T-130: Retroactive (played) session finalize
+# ──────────────────────────────────────────────────────────────────────────────
+
+class SessionFinalizePlayedView(GamesAPIView):
+    """Record an already-played game in one shot (planned → completed).
+
+    Used by the 'Только что сыграли' flow on the create-session page when the
+    owner doesn't want to step through invites + rounds.
+    """
+
+    permission_classes = [IsSessionCreatorOrAdmin]
+
+    def post(self, request, session_id: int, *args, **kwargs) -> Response:
+        session = get_object_or_404(selectors.get_session_queryset(), pk=session_id)
+        self.check_object_permissions(request, session)
+        serializer = FinalizePlayedSessionSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        outcome = services.finalize_played_session(
+            session=session, **serializer.validated_data
+        )
         detailed = selectors.get_session_detail(session_id=outcome.session_id)
         return Response(SessionDetailSerializer(detailed).data, status=status.HTTP_201_CREATED)
 

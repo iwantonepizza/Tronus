@@ -7,6 +7,7 @@ from .views import (
     SessionClashOfKingsView,
     SessionDetailView,
     SessionEventCardView,
+    SessionFinalizePlayedView,
     SessionFinalizeView,
     SessionInviteDetailView,
     SessionInvitesView,
@@ -34,6 +35,11 @@ urlpatterns = [
         "sessions/<int:session_id>/finalize/",
         SessionFinalizeView.as_view(),
         name="session-finalize",
+    ),
+    path(
+        "sessions/<int:session_id>/finalize-played/",
+        SessionFinalizePlayedView.as_view(),
+        name="session-finalize-played",
     ),
     path(
         "sessions/<int:session_id>/participants/",

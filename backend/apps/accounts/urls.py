@@ -9,6 +9,9 @@ from .views import (
     MeView,
     PasswordChangeView,
     PasswordResetView,
+    PendingRegistrationApproveView,
+    PendingRegistrationListView,
+    PendingRegistrationRejectView,
     ProfileUpdateView,
     PublicUserDetailView,
     PublicUserListView,
@@ -30,4 +33,19 @@ urlpatterns = [
     path("users/<int:user_id>/", PublicUserDetailView.as_view(), name="user-detail"),
     path("users/<int:user_id>/profile/", ProfileUpdateView.as_view(), name="profile-update"),
     path("search/", SearchView.as_view(), name="search"),
+    path(
+        "admin/pending-users/",
+        PendingRegistrationListView.as_view(),
+        name="admin-pending-users",
+    ),
+    path(
+        "admin/pending-users/<int:user_id>/approve/",
+        PendingRegistrationApproveView.as_view(),
+        name="admin-pending-users-approve",
+    ),
+    path(
+        "admin/pending-users/<int:user_id>/reject/",
+        PendingRegistrationRejectView.as_view(),
+        name="admin-pending-users-reject",
+    ),
 ]

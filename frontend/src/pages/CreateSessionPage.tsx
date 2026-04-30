@@ -90,7 +90,7 @@ export function CreateSessionPage() {
           const match = buildMatchFromPlannerDraft(draft)
 
           if (entryMode === 'played') {
-            navigate(`/matches/${match.id}/finalize`, { state: { match } })
+            navigate(`/matches/${match.id}/finalize-played`, { state: { match } })
             return
           }
 
@@ -105,16 +105,20 @@ export function CreateSessionPage() {
           planning_note: draft.planningNote,
         })
 
+        // For the 'played' entry mode the dedicated retroactive page accepts
+        // the full roster in one shot, so we don't pre-create participations
+        // here — that would race against finalize_played_session() which
+        // refuses to run if Participations already exist.
+        if (entryMode === 'played') {
+          navigate(`/matches/${createdSession.id}/finalize-played`)
+          return
+        }
+
         for (const participant of draft.participantSeeds) {
           await addParticipant(createdSession.id, {
             user: participant.userId,
             faction: participant.faction,
           })
-        }
-
-        if (entryMode === 'played') {
-          navigate(`/matches/${createdSession.id}/finalize`)
-          return
         }
 
         navigate(`/matches/${createdSession.id}`)

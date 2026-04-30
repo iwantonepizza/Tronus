@@ -56,6 +56,8 @@ export interface PrivateUser extends PublicUser {
   username: string
   email: string
   is_active: boolean
+  is_staff?: boolean
+  is_superuser?: boolean
   bio: string
 }
 
@@ -210,6 +212,21 @@ export interface StartSessionPayload {
 }
 
 export interface FinalizeSessionPayload {
+  mvp?: number | null
+  final_note?: string
+}
+
+export interface FinalizePlayedResultItem {
+  user_id: number
+  faction_slug: FactionSlug
+  place: number
+  castles: number
+}
+
+export interface FinalizePlayedSessionPayload {
+  results: FinalizePlayedResultItem[]
+  rounds_played?: number
+  end_reason?: EndReason
   mvp?: number | null
   final_note?: string
 }
@@ -487,4 +504,18 @@ export interface ApiFunFact {
   icon: string
   title: string
   description: string
+}
+
+// ── Admin: pending registrations ───────────────────────────────────────────
+
+export interface ApiPendingUser {
+  id: number
+  email: string
+  nickname: string
+  date_joined: string
+}
+
+export interface ApiPendingUsersList {
+  results: ApiPendingUser[]
+  count: number
 }

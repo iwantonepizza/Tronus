@@ -15,20 +15,23 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from . import selectors
-from .permissions import IsAuthenticatedUser, IsSelfUser
+from .permissions import IsAdminUser, IsAuthenticatedUser, IsSelfUser
 from .serializers import (
     LoginSerializer,
     PasswordChangeSerializer,
     PasswordResetSerializer,
+    PendingUserSerializer,
     PrivateUserSerializer,
     PublicUserSerializer,
     RegisterSerializer,
     UpdateProfileSerializer,
 )
 from .services import (
+    approve_user,
     change_password,
     find_user_by_login,
     register_user,
+    reject_user,
     reset_password,
     update_profile,
 )
@@ -334,3 +337,57 @@ class SearchView(APIView):
                 "factions": factions,
             }
         )
+
+
+# ──────────────────────────────────────────────────────────────────────────
+# Wave 9 — admin moderation: pending registrations
+# ──────────────────────────────────────────────────────────────────────────
+
+class PendingRegistrationListView(APIView):
+    """List users that registered without the secret word and still wait for admin approval."""
+
+    permission_classes = [IsAdminUser]
+
+    def get(self, request, *args, **kwargs) -> Response:
+        from .models import User as UserModel  # noqa: PLC0415
+
+        queryset = (
+            UserModel.objects.filter(is_active=False)
+            .select_related("profile")
+            .order_by("-date_joined")
+        )
+        serializer = PendingUserSerializer(queryset, many=True, context={"request": request})
+        return Response({"results": serializer.data, "count": len(serializer.data)})
+
+
+class PendingRegistrationApproveView(APIView):
+    permission_classes = [IsAdminUser]
+
+    def post(self, request, user_id: int, *args, **kwargs) -> Response:
+        from .models import User as UserModel  # noqa: PLC0415
+
+        user = get_object_or_404(UserModel, pk=user_id)
+        approve_user(user=user)
+        return Response(
+            PendingUserSerializer(user, context={"request": request}).data,
+            status=status.HTTP_200_OK,
+        )
+
+
+class PendingRegistrationRejectView(APIView):
+    permission_classes = [IsAdminUser]
+
+    def post(self, request, user_id: int, *args, **kwargs) -> Response:
+        from .models import User as UserModel  # noqa: PLC0415
+
+        user = get_object_or_404(UserModel, pk=user_id)
+        try:
+            reject_user(user=user)
+        except ValidationError as exc:
+            return build_error_response(
+                code="validation_error",
+                message="Ошибка валидации.",
+                status_code=status.HTTP_400_BAD_REQUEST,
+                details=exc.message_dict,
+            )
+        return Response(status=status.HTTP_204_NO_CONTENT)

@@ -165,7 +165,28 @@ def approve_user(*, user: User) -> User:
 
     user.is_active = True
     user.save(update_fields=["is_active"])
+
+    # Add to player group, just like the auto-activation path. The signal
+    # that handles the False→True transition takes care of this in most
+    # setups but a duplicate add is harmless.
+    player_group, _ = Group.objects.get_or_create(name="player")
+    user.groups.add(player_group)
     return user
+
+
+@transaction.atomic
+def reject_user(*, user: User) -> None:
+    """Hard-delete a not-yet-activated user.
+
+    Only allowed for ``is_active=False`` accounts so an admin can never wipe
+    an active player by mistake. Active users with their own data should be
+    deactivated through the regular admin / API surface.
+    """
+    if user.is_active:
+        raise ValidationError(
+            {"user": ["Удалять можно только аккаунты, ожидающие подтверждения."]}
+        )
+    user.delete()
 
 
 @transaction.atomic

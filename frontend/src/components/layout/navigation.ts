@@ -5,6 +5,7 @@ import {
   Home,
   Plus,
   Shield,
+  ShieldCheck,
   Sword,
   Trophy,
   UserRound,
@@ -17,6 +18,8 @@ export interface NavItem {
   icon: LucideIcon
   to: string
   match: (pathname: string) => boolean
+  /** When true, only visible to staff/superuser users. */
+  adminOnly?: boolean
 }
 
 export const PRIMARY_NAV_ITEMS: NavItem[] = [
@@ -61,6 +64,14 @@ export const PRIMARY_NAV_ITEMS: NavItem[] = [
     icon: Flame,
     to: '/h2h',
     match: (pathname) => pathname.startsWith('/h2h'),
+  },
+  {
+    id: 'admin-registrations',
+    label: 'Заявки',
+    icon: ShieldCheck,
+    to: '/admin/registrations',
+    match: (pathname) => pathname.startsWith('/admin/registrations'),
+    adminOnly: true,
   },
 ]
 

@@ -74,6 +74,8 @@ class PrivateUserSerializer(PublicUserSerializer):
     username = serializers.CharField(read_only=True)
     email = serializers.EmailField(read_only=True)
     is_active = serializers.BooleanField(read_only=True)
+    is_staff = serializers.BooleanField(read_only=True)
+    is_superuser = serializers.BooleanField(read_only=True)
     bio = serializers.CharField(source="profile.bio", read_only=True)
 
     class Meta(PublicUserSerializer.Meta):
@@ -82,6 +84,8 @@ class PrivateUserSerializer(PublicUserSerializer):
             "username",
             "email",
             "is_active",
+            "is_staff",
+            "is_superuser",
             "nickname",
             "favorite_faction",
             "bio",
@@ -99,3 +103,14 @@ class UpdateProfileSerializer(serializers.Serializer):
         allow_null=True,
     )
     bio = serializers.CharField(required=False, allow_blank=True)
+
+
+class PendingUserSerializer(serializers.ModelSerializer):
+    """Slim view of a not-yet-activated user for the admin moderation page."""
+
+    nickname = serializers.CharField(source="profile.nickname", read_only=True)
+
+    class Meta:
+        model = User
+        fields = ("id", "email", "nickname", "date_joined")
+        read_only_fields = fields

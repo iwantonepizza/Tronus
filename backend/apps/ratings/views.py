@@ -88,7 +88,22 @@ class ErrorHandlingMixin:
                 status_code=status.HTTP_404_NOT_FOUND,
             )
 
-        return super().handle_exception(exc)
+        # Convert opaque 500s into structured ones with a readable code.
+        import logging
+        import traceback
+
+        logger = logging.getLogger("apps.ratings.views")
+        logger.exception("Unhandled exception in ratings view: %s", exc)
+        return build_error_response(
+            code="server_error",
+            message="Внутренняя ошибка сервера.",
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            details={
+                "exception_class": exc.__class__.__name__,
+                "exception_message": str(exc)[:500],
+                "trace_tail": traceback.format_exc().splitlines()[-5:],
+            },
+        )
 
 
 class RatingsAPIView(ErrorHandlingMixin, APIView):

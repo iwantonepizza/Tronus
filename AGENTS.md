@@ -152,45 +152,49 @@ Coder **не принимает архитектурных решений** са
 
 **Фаза:** **Phase 1 MVP — CLOSED**. Следующая — Phase 2.
 
-**Статистика выполнения (на 2026-04-30):**
+**Статистика выполнения (на 2026-04-30, конец дня):**
 
 | Метрика                             | Значение |
 |-------------------------------------|----------|
-| Закрытых задач                      | 91       |
+| Закрытых задач                      | ~108 (Phase 1 49 + Wave 5/6/7/8/9) |
 | Backend tests passing               | 200+     |
 | Frontend tests passing              | 15+      |
-| Backend API endpoints               | ~62      |
-| Frontend pages                      | 21       |
-| ADR принятых                        | 15       |
-| Change requests resolved / cancelled| 9 / 1    |
-| Change requests open                | 1 (CR-009 — blocked owner) |
+| Backend API endpoints               | ~70      |
+| Frontend pages                      | 23 (Wave 9 добавил FinalizePlayedPage, AdminRegistrationsPage) |
+| ADR принятых                        | 16 (ADR-0017 новый) |
+| Change requests resolved / cancelled| 10 / 1   |
+| Change requests open                | 0        |
 
-**Phase 1 — CLOSED. Phase 2 — CLOSED. Wave 8 — Production hardening + Phase 3 prep.**
+**Phase 1 — CLOSED. Phase 2 — IN PROD на `got.craft-hookah.ru`. Wave 10 — UI polish после второго юзер-теста.**
 
-**Что сделано в Phase 2:**
+**Что закрыто:**
 
-✅ **Wave 5 — auth/hotfix/rules pivot:** secret word, login email/nick, password reset/change, GameMode rules, House decks → 2, русские validation messages, hotfixes avatars/mobile.
+✅ **Phase 1 MVP** (Waves 0-4): backend домен (8 apps, ~35 endpoints), frontend (18 страниц), CI, хостинг draft.
 
-✅ **Wave 6 — Phase 2 ядро:** lifecycle расширен (planned/in_progress/completed), RoundSnapshot, SessionInvite, randomize/replace participant, finalize из последнего snapshot, timeline events (wildlings/clash/event_cards), chronicler в comments, frontend RoundTrackerPage.
+✅ **Wave 5 (Phase 2 hotfix/auth/rules):** secret word, login email/nick, password reset/change, GameMode rules, House decks → 2, русские validation messages, hotfixes avatars/mobile.
 
-✅ **Wave 7 — Phase 2 завершение:** action modals (wildlings/clash/event-cards/replace UI), timeline UI, notifications subsystem, search Cmd+K, fun facts, русификация, error pages, hide chronicler, технический долг (T-119, T-127). Plus 8 production deployment fixes от codex.
+✅ **Wave 6 (Phase 2 ядро):** lifecycle расширен (planned/in_progress/completed), RoundSnapshot, SessionInvite, randomize/replace participant, finalize из последнего snapshot, timeline events (wildlings/clash/event_cards), chronicler в comments, frontend RoundTrackerPage.
 
-**Architect iteration 7 дополнительно:**
-- **Pivot deploy под host-nginx** (сценарий юзера с собственным nginx вне контейнеров): `deploy/docker-compose.prod.yml` без frontend-контейнера, gunicorn на `127.0.0.1:8000`, статика/медиа bind-mount в `/var/www/tronus/`. Готовый конфиг хост-nginx в `deploy/nginx-host/tronus.conf`. Старый bundled-вариант сохранён как fallback.
-- **CR-010**: критичная находка — `.gitignore` исключал `AGENTS.md` и `ai-docs/`, что блокировало архитектурную документацию из git. Также удалены мусорные дубли в `deploy/` (полные зеркала проекта во вложенных директориях).
+✅ **Wave 7 (Phase 2 завершение):** action modals (wildlings/clash/event-cards/replace UI), timeline UI, notifications subsystem, search Cmd+K, fun facts, русификация, error pages.
 
-**Что в Wave 8 (текущая, 12 задач):**
-- 🔴 Production hardening: I-005 (deploy на VPS — owner action, готова инструкция), I-006 (Sentry), I-007 (Postgres backup), I-008 (healthcheck), I-009 (security headers + rate limit), I-010 (dependabot).
-- 🟡 Tech debt: T-129 (verify полный test suite зелёный после wave 6/7).
-- 🟢 Phase 3 первые шаги (после production stable): T-200 (Seasons backend), T-201 (Achievements backend), F-200 (Seasons UI), F-201 (Achievements UI). ADR-0016 от architect.
+✅ **Wave 8 (production hardening):** T-128 (real Westeros cards), T-129 (verify tests), I-005 (deploy на VPS owner с host-nginx), I-006 (Sentry), I-007 (Postgres backup), I-008 (healthcheck), I-009 (security headers).
 
-**Blocked / waiting owner:**
-- CR-009 / T-128 — реальные slugs Westeros карт (placeholder сейчас).
-- I-005 — нужна реализация на стороне owner: `deploy/README.md` пошаговая инструкция готова.
-- ADR-0016 (Achievements engine) — architect создаст когда дойдём.
+✅ **Wave 9 (хотфиксы после первого прод-теста):** T-130 (RSVP NOT_GOING fix), T-131 (encoding fix + миграция 0008), T-132 (robust 500 handler), T-133 + F-202 (retroactive finalize), T-134 + F-203 (admin tab подтверждения регистраций). Параллельно — bugfix на 403 (IsPlayerUser) и UI status=in_progress.
 
-**Что ждёт после Wave 8:**
-- Wave 9 — Phase 3 расширение: Tournaments (T-202), F-201 polish, push notifications, легендарные матчи.
+**Что в Wave 10 (текущая, 17 задач):**
+
+- 🔴 **Track A — главный rework:** ADR-0017 (UI roster = invites), T-140 (serializer + permissions), F-210 (MatchDetailPage rework: один список «Участники» вместо двух), F-211 (RSVP на главной).
+- 🟡 **Track B — UI баги/polish:** T-150 (admin 500 на GameMode), T-151 + F-219 (TZ Asia/Yekaterinburg GMT+5), F-212 (клик по next match), F-213 (cancelled UI), F-214 («Колода: …»), F-215 (формат игроков `min-max` → `N`), F-216 (perm на edit/cancel/start), F-217 (текст hero), F-218 (default scheduled_at = now), F-220 (memo last mode/deck), F-221 (мобильные фильтры).
+- 🔵 **Track C:** T-152 + F-222 (H2H autopick).
+- 🟢 **Track D — Wave 9 carry-over:** T-160 (force_remove_participation), T-161 (votes lifecycle, blocked → ADR-0018), T-162 (verify pytest), T-163 (тесты finalize_played), F-204 (admin badge).
+
+**Blocked / waiting:**
+- T-161 (votes до finalize) — нужен ADR-0018 от architect.
+- Phase 3 (Seasons, Achievements, Tournaments) — после Wave 10 closed и стабилизации в prod.
+
+**Что ждёт после Wave 10:**
+- Wave 11 — production observability (если что-то не дотянули в I-006..I-009).
+- Phase 3 — Seasons (T-200), Achievements (T-201), Tournaments (T-202).
 
 ---
 

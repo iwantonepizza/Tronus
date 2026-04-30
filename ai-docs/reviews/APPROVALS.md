@@ -4,6 +4,31 @@
 
 ---
 
+## 2026-04-30 — Wave 9 — Hotfix-волна по второму юзер-тесту (7 задач + bugfix)
+
+- decision: `approved` для всех 7 (T-130, T-131, T-132, T-133, T-134, F-202, F-203) + 403/in_progress bugfix
+- reviewer: architect
+- source: `users_task.md` исходник, `Wave 9` секция в IN_PROGRESS, отдельные отчёты в reports/
+- notes: codex провёл срочную хотфикс-волну после первого реального теста на `got.craft-hookah.ru`. Устранил RSVP 500-ки, мохибейк, добавил retroactive finalize, admin tab подтверждения регистраций. Параллельно claude-sonnet-4-6 нашёл и починил 403 (regression в IsPlayerUser) и UI для status=in_progress. CR-006 / CR-007 / CR-008 / CR-010 → все закрыты в Wave 6/7. CR-009 → закрыт в Wave 8 (T-128).
+
+---
+
+## 2026-04-30 — Wave 8 — Production hardening (8 задач)
+
+- decision: `approved` для всех (T-128, T-129, I-005, I-005-followup, I-006, I-007, I-008, I-009)
+- reviewer: architect
+- notes: проект задеплоен на VPS owner с host-nginx (`deploy/docker-compose.prod.yml`). Sentry, healthcheck, Postgres backup, security headers — на месте.
+
+---
+
+## 2026-04-30 — Архитектурные решения (Wave 10)
+
+- **ADR-0017** (UI invites as canonical roster) — accepted by architect.
+- Wave 10 IN_PROGRESS выдана: 17 задач в 4 трека.
+- **ADR-0018** (votes lifecycle) — pending, нужно перед T-161.
+
+---
+
 ## 2026-04-30 — Wave 7 — Phase 2 завершение (16 задач + production fixes)
 
 - decision: `approved` (12) + `approved_with_pivot` (production fixes — architect добавил host-nginx сценарий)

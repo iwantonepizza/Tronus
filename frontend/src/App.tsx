@@ -1,11 +1,13 @@
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
 import { RequireAuth } from '@/components/auth/RequireAuth'
 import { AppShell } from '@/components/layout/AppShell'
+import { AdminRegistrationsPage } from '@/pages/AdminRegistrationsPage'
 import { AvatarGeneratorPage } from '@/pages/AvatarGeneratorPage'
 import { CreateSessionPage } from '@/pages/CreateSessionPage'
 import { EditSessionPage } from '@/pages/EditSessionPage'
 import { FactionDetailPage } from '@/pages/FactionDetailPage'
 import { FactionsPage } from '@/pages/FactionsPage'
+import { FinalizePlayedPage } from '@/pages/FinalizePlayedPage'
 import { FinalizeSessionPage } from '@/pages/FinalizeSessionPage'
 import { HeadToHeadPage } from '@/pages/HeadToHeadPage'
 import { HomePage } from '@/pages/HomePage'
@@ -54,6 +56,14 @@ function App() {
             <Route
               path="/matches/:id/finalize"
               element={<FinalizeSessionPage />}
+            />
+            <Route
+              path="/matches/:id/finalize-played"
+              element={<FinalizePlayedPage />}
+            />
+            <Route
+              path="/admin/registrations"
+              element={<AdminRegistrationsPage />}
             />
           </Route>
         </Route>

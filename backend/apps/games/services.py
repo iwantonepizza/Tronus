@@ -651,22 +651,26 @@ def invite_user(
         rsvp_status=SessionInvite.RsvpStatus.INVITED,
     )
 
-    # Notify invitee about new invite
+    # Notify invitee about new invite. Defensive: never block the invite flow
+    # on a notification failure (e.g. unknown kind, race in DB).
     from apps.notifications.services import create_notification  # noqa: PLC0415
 
-    create_notification(
-        user_id=invitee.pk,
-        kind="invite_received",
-        payload={
-            "session_id": locked_session.pk,
-            "invited_by_id": inviter.pk,
-            "invited_by_nickname": getattr(
-                getattr(inviter, "profile", None),
-                "nickname",
-                inviter.username,
-            ),
-        },
-    )
+    try:
+        create_notification(
+            user_id=invitee.pk,
+            kind="invite_received",
+            payload={
+                "session_id": locked_session.pk,
+                "invited_by_id": inviter.pk,
+                "invited_by_nickname": getattr(
+                    getattr(inviter, "profile", None),
+                    "nickname",
+                    inviter.username,
+                ),
+            },
+        )
+    except Exception:  # pragma: no cover — never break invite on notif failure
+        pass
     return invite
 
 
@@ -720,10 +724,11 @@ def update_rsvp(
         update_fields.append("updated_at")
         locked_invite.save(update_fields=update_fields)
 
-    # Notify session creator when invitee responds
+    # Notify session creator when invitee responds (going / declined).
+    # `maybe` and `invited` don't trigger a notification.
     if rsvp_status is not UNSET_INVITE and str(rsvp_status) in (
         SessionInvite.RsvpStatus.GOING,
-        SessionInvite.RsvpStatus.NOT_GOING,
+        SessionInvite.RsvpStatus.DECLINED,
     ):
         from apps.notifications.services import create_notification  # noqa: PLC0415
 
@@ -732,14 +737,19 @@ def update_rsvp(
             if str(rsvp_status) == SessionInvite.RsvpStatus.GOING
             else "invite_declined"
         )
-        create_notification(
-            user_id=locked_invite.session.created_by_id,
-            kind=kind,
-            payload={
-                "session_id": locked_invite.session_id,
-                "user_id": locked_invite.user_id,
-            },
-        )
+        # Don't fail the RSVP update if the notification subsystem misbehaves —
+        # users care more about their RSVP working than the creator getting a ping.
+        try:
+            create_notification(
+                user_id=locked_invite.session.created_by_id,
+                kind=kind,
+                payload={
+                    "session_id": locked_invite.session_id,
+                    "user_id": locked_invite.user_id,
+                },
+            )
+        except Exception:  # pragma: no cover — defensive, never break RSVP on notif fail
+            pass
 
     return locked_invite
 
@@ -1061,3 +1071,200 @@ def record_event_card_played(
         chronicler_event=event,
     )
     return event
+
+
+# ---------------------------------------------------------------------------
+# Wave 9 — T-130: Retroactive (played) sessions
+# ---------------------------------------------------------------------------
+#
+# Use case: the owner just finished a real-life game and wants to record the
+# result without going through the planned → invites → in_progress → rounds
+# → finalize flow. They only know who played, what faction each person had,
+# what place they took and how many castles they ended on.
+#
+# This service short-circuits the lifecycle in a single atomic step:
+#   1. Validate session is still ``planned`` (otherwise use the regular flow).
+#   2. Validate the supplied roster against mode rules (player count, factions).
+#   3. Create Participations directly, with place / castles / is_winner already
+#      filled in.
+#   4. Create a single synthetic RoundSnapshot (round_number = rounds_played)
+#      so that downstream stats / fun_facts code that expects a snapshot still
+#      finds one.
+#   5. Create the Outcome and bump status to ``completed`` in the same txn.
+#
+# Reference: USER_FEEDBACK 2026-04-30, ADR-0009 §revisit (no schema change).
+
+
+@transaction.atomic
+def finalize_played_session(
+    *,
+    session: GameSession,
+    results: list[dict],
+    rounds_played: int = 1,
+    end_reason: str = "other",
+    mvp: User | None = None,
+    final_note: str = "",
+) -> Outcome:
+    """planned → completed in one shot for retroactive game logging.
+
+    ``results`` is a list of dicts, one per participant::
+
+        {"user_id": 17, "faction_slug": "stark", "place": 1, "castles": 7}
+
+    Exactly one entry must have ``place == 1`` and that entry's user becomes
+    the winner. Castles are validated 0..7. Places must form 1..N with no
+    gaps or duplicates.
+    """
+    locked_session = _get_locked_session(session_id=session.pk)
+
+    # Allow retroactive finalize only from `planned`. If the user already
+    # started rounds they should use the regular finalize_session flow.
+    if locked_session.status != GameSession.Status.PLANNED:
+        raise ValidationError(
+            {
+                "session": [
+                    "Ретроактивно завершить можно только запланированную партию. "
+                    "Если партия уже идёт — отметьте раунды и используйте обычное "
+                    "завершение."
+                ]
+            }
+        )
+
+    if locked_session.participations.exists():
+        raise ValidationError(
+            {
+                "session": [
+                    "В этой партии уже есть участники. Удалите их вручную или "
+                    "используйте обычное завершение."
+                ]
+            }
+        )
+
+    if not results:
+        raise ValidationError({"results": ["Нужен хотя бы один участник."]})
+
+    # ── 1. Field-level validation ─────────────────────────────────────────
+    errors: dict[str, list[str]] = {}
+    user_ids: list[int] = []
+    faction_slugs: list[str] = []
+    places: list[int] = []
+    for index, item in enumerate(results):
+        prefix = f"results[{index}]"
+        uid = item.get("user_id")
+        slug = item.get("faction_slug")
+        place = item.get("place")
+        castles = item.get("castles", 0)
+
+        if not isinstance(uid, int) or uid <= 0:
+            errors.setdefault(prefix, []).append("user_id обязателен.")
+            continue
+        if not isinstance(slug, str) or not slug:
+            errors.setdefault(prefix, []).append("faction_slug обязателен.")
+            continue
+        if not isinstance(place, int) or place < 1:
+            errors.setdefault(prefix, []).append("place должен быть положительным целым.")
+            continue
+        if not isinstance(castles, int) or castles < 0 or castles > 7:
+            errors.setdefault(prefix, []).append("castles должно быть целым 0..7.")
+            continue
+
+        user_ids.append(uid)
+        faction_slugs.append(slug)
+        places.append(place)
+
+    if errors:
+        raise ValidationError(errors)
+
+    if len(set(user_ids)) != len(user_ids):
+        raise ValidationError({"results": ["Игрок встречается несколько раз."]})
+
+    expected_places = sorted(range(1, len(results) + 1))
+    if sorted(places) != expected_places:
+        raise ValidationError(
+            {"results": [f"Места должны быть 1..{len(results)} без повторов и пропусков."]}
+        )
+
+    if len(set(faction_slugs)) != len(faction_slugs):
+        raise ValidationError({"results": ["Каждая фракция может быть выбрана один раз."]})
+
+    # ── 2. Mode rules ──────────────────────────────────────────────────────
+    validate_session_setup(mode=locked_session.mode, faction_slugs=faction_slugs)
+
+    # ── 3. Resolve Faction and User instances ──────────────────────────────
+    faction_objs: dict[str, Faction] = {
+        f.slug: f for f in Faction.objects.filter(slug__in=faction_slugs)
+    }
+    missing_factions = [s for s in faction_slugs if s not in faction_objs]
+    if missing_factions:
+        raise ValidationError(
+            {"results": [f"Неизвестные фракции: {missing_factions}."]}
+        )
+
+    found_users = {u.pk: u for u in User.objects.filter(pk__in=user_ids)}
+    missing_users = [uid for uid in user_ids if uid not in found_users]
+    if missing_users:
+        raise ValidationError(
+            {"results": [f"Не найдены пользователи: {missing_users}."]}
+        )
+
+    if mvp is not None and mvp.pk not in found_users:
+        raise ValidationError({"mvp": ["MVP должен быть одним из участников партии."]})
+
+    if end_reason not in {choice for choice, _ in Outcome.EndReason.choices}:
+        raise ValidationError({"end_reason": [f"Недопустимое значение: '{end_reason}'."]})
+
+    # ── 4. Create Participations with final places / castles ──────────────
+    # Sort by place so participation IDs come out in result order — purely
+    # cosmetic but keeps the participation list stable in the UI.
+    sorted_results = sorted(results, key=lambda r: r["place"])
+    created_parts: list[Participation] = []
+    for item in sorted_results:
+        is_winner = item["place"] == 1
+        created_parts.append(
+            Participation.objects.create(
+                session=locked_session,
+                user=found_users[item["user_id"]],
+                faction=faction_objs[item["faction_slug"]],
+                place=item["place"],
+                castles=int(item.get("castles") or 0),
+                is_winner=is_winner,
+                joined_at_round=0,
+            )
+        )
+
+    # ── 5. Synthetic RoundSnapshot for stats / fun-facts compatibility ─────
+    # Some downstream selectors (fun_facts) expect at least one snapshot. We
+    # produce one snapshot at round_number = rounds_played that mirrors the
+    # final castles state. Influence tracks are filled with participation IDs
+    # in place order; supply defaults to 1 per player.
+    p_ids = [p.pk for p in created_parts]
+    RoundSnapshot.objects.create(
+        session=locked_session,
+        round_number=max(1, int(rounds_played or 1)),
+        influence_throne=list(p_ids),
+        influence_sword=list(p_ids),
+        influence_court=list(p_ids),
+        supply={str(pid): 1 for pid in p_ids},
+        castles={str(p.pk): int(p.castles or 0) for p in created_parts},
+        wildlings_threat=4,
+        note="Снимок создан автоматически для ретроактивной записи партии.",
+    )
+
+    # ── 6. Outcome + status transition ─────────────────────────────────────
+    outcome = Outcome.objects.create(
+        session=locked_session,
+        rounds_played=max(1, int(rounds_played or 1)),
+        end_reason=end_reason,
+        mvp=mvp,
+        final_note=(final_note or "").strip(),
+    )
+    locked_session.status = GameSession.Status.COMPLETED
+    locked_session.save(update_fields=["status", "updated_at"])
+
+    # Chronicler entry so the history shows this was retroactive.
+    MatchComment.objects.create(
+        session=locked_session,
+        author=None,
+        body="Летописец: партия записана задним числом без отметки раундов.",
+    )
+    return outcome

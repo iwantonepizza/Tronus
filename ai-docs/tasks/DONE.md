@@ -4,6 +4,72 @@
 
 ---
 
+## 2026-04-30 — Wave 9 — Hotfix-волна по второму юзер-тесту + admin moderation (7 задач)
+
+Источник: список багов от owner после первого прод-теста на `got.craft-hookah.ru`. Полное описание — `users_task.md` (архивный, теперь в `ai-docs/source/`).
+
+### 2026-04-30 — F-203: Admin tab «Заявки на регистрацию»
+- agent: Codex — report: `ai-docs/reports/2026-04-30-bugfix-403-and-status.md` + Wave 9 inline — **approved**
+
+### 2026-04-30 — T-134: admin endpoints для подтверждения регистраций
+- agent: Codex — report: Wave 9 inline — **approved**
+- notes: 3 endpoint (List/Approve/Reject) + IsAdminUser permission + PendingUserSerializer.
+
+### 2026-04-30 — F-202: UI ретроактивной партии + переключение flow в CreateSessionPage
+- agent: Codex — report: Wave 9 inline — **approved**
+
+### 2026-04-30 — T-133: ретроактивная партия (finalize_played_session)
+- agent: Codex — report: Wave 9 inline — **approved**
+- notes: новый сервис + endpoint POST /sessions/<id>/finalize-played/. Принимает roster с местами и замками, проводит partial planned → completed за один шаг.
+
+### 2026-04-30 — T-132: структурированные 500-ки вместо пустых "Internal Server Error"
+- agent: Codex — report: Wave 9 inline — **approved**
+- notes: ErrorHandlingMixin теперь возвращает JSON с code/exception_class/exception_message/trace_tail в games и ratings views.
+
+### 2026-04-30 — T-131: починка кодировки названий режимов
+- agent: Codex — report: Wave 9 inline — **approved**
+- notes: миграция 0004_game_mode_rules.py переписана с правильным UTF-8. Новая идемпотентная data-миграция 0008_fix_mode_names_encoding.py чинит мохибейк на проде.
+
+### 2026-04-30 — T-130: update_rsvp NOT_GOING → DECLINED + safe notifications
+- agent: Codex — report: Wave 9 inline — **approved**
+- notes: fixes 500 на «Может быть»/«Не пойду». Заодно create_notification обёрнуто в try/except в update_rsvp и invite_user.
+
+### 2026-04-30 — bugfix: 403 на /invites/me/ + кракозябры in_progress
+- agent: claude-sonnet-4-6 (coder) — report: `ai-docs/reports/2026-04-30-bugfix-403-and-status.md` — **approved**
+- notes: register_user с auto_activated теперь явно добавляет user в group player + management command backfill_player_group для починки уже созданных. IsPlayerUser смягчён до user.is_active. UI: in_progress статус поднят в label-маппингах.
+
+---
+
+## 2026-04-30 — Wave 8 — Production hardening (8 задач)
+
+### 2026-04-30 — I-009: Security headers
+- agent: Codex — report: `ai-docs/reports/2026-04-30-I-009.md` — **approved**
+
+### 2026-04-30 — I-008: Healthcheck endpoint
+- agent: Codex — report: `ai-docs/reports/2026-04-30-I-008.md` — **approved**
+
+### 2026-04-30 — I-007: Postgres backup automation
+- agent: Codex — report: `ai-docs/reports/2026-04-30-I-007.md` — **approved**
+
+### 2026-04-30 — I-006: Sentry / error monitoring
+- agent: Codex — report: `ai-docs/reports/2026-04-30-I-006.md` — **approved**
+
+### 2026-04-30 — I-005-followup: дополнительные фиксы deploy
+- agent: Codex — report: `ai-docs/reports/2026-04-30-I-005-followup.md` — **approved**
+
+### 2026-04-30 — I-005: Production deploy на VPS got.craft-hookah.ru (host-nginx)
+- agent: Codex / owner — report: `ai-docs/reports/2026-04-30-I-005.md` — **approved**
+- notes: бэк успешно поднят, проксируется через host nginx, SSL через certbot. Обнаружились баги при первом тесте → Wave 9.
+
+### 2026-04-30 — T-129: Verify полный test suite зелёный
+- agent: Codex — report: `ai-docs/reports/2026-04-30-T-129.md` — **approved**
+
+### 2026-04-30 — T-128: replace placeholder Westeros card slugs (CR-009 closed)
+- agent: Codex — report: `ai-docs/reports/2026-04-30-T-128.md` — **approved**
+- notes: реальные карты из `ai-docs/WESTEROS_DECKS.md` подставлены в event_cards.py. CR-009 → resolved.
+
+---
+
 ## 2026-04-30 — Wave 7 — Phase 2 завершение (16 задач + production fixes)
 
 Review: `ai-docs/reviews/2026-04-30-batch-wave7.md`. Все приняты.

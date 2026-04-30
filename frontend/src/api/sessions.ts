@@ -104,6 +104,16 @@ export function finalizeSession(
   })
 }
 
+export function finalizePlayedSession(
+  sessionId: number,
+  payload: import('@/api/types').FinalizePlayedSessionPayload,
+) {
+  return api<ApiSessionDetail>(`/sessions/${sessionId}/finalize-played/`, {
+    method: 'POST',
+    json: payload,
+  })
+}
+
 // ── Wave 6 API calls ─────────────────────────────────────────────────────────
 import type {
   ApiRoundSnapshot,

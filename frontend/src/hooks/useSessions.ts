@@ -296,6 +296,21 @@ export function useFinalizeSession(sessionId: number) {
   })
 }
 
+export function useFinalizePlayedSession(sessionId: number) {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: (payload: import('@/api/types').FinalizePlayedSessionPayload) =>
+      import('@/api/sessions').then((m) =>
+        m.finalizePlayedSession(sessionId, payload),
+      ),
+    onSuccess: (session) => {
+      queryClient.invalidateQueries({ queryKey: ['sessions'] })
+      queryClient.setQueryData(['session', session.id], session)
+    },
+  })
+}
+
 // ── Wave 6 hooks ──────────────────────────────────────────────────────────────
 import {
   completeRound,

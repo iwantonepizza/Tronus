@@ -4,6 +4,36 @@
 
 ## Unreleased
 
+### 2026-04-30 — Architect iteration 10 — Wave 10 outlined (UI rework + bug spree)
+
+- Получен второй прод-фидбэк после реального теста на `got.craft-hookah.ru` — `ai-docs/source/USER_FEEDBACK_2026-04-30.md` (~20 пунктов).
+- Architect разобрал в `USER_FEEDBACK_ANALYSIS_2026-04-30.md` — категоризация, приоритеты, мэппинг в задачи.
+- **ADR-0017** принят: UI roster = SessionInvite во время `planned`, Participation только при `in_progress`/`completed`. Кнопка «Присоединиться» убирается, её заменяет «Я иду» в RSVP-блоке.
+- Wave 10 выдана — 17 задач в 4 трека:
+  - **Track A** (главный rework): T-140, F-210, F-211 — единый список «Участники = инвайты» в UI.
+  - **Track B** (UI баги/polish): T-150 (admin 500 на GameMode), T-151 + F-219 (TZ Asia/Yekaterinburg), F-212..F-221 — десяток мелких UI правок.
+  - **Track C**: T-152 + F-222 (H2H autopick).
+  - **Track D** (Wave 9 carry-over): T-160 (force_remove_participation), T-161 (votes lifecycle, blocked → нужен ADR-0018), T-162 (verify pytest), T-163 (тесты finalize_played), F-204 (admin badge).
+- Wave 8 + Wave 9 формально внесены в `DONE.md` и `APPROVALS.md` (codex закрывал их без формального approve в архитекторе).
+- **Cleanup repo (повторно)**: повторно удалены мусорные дубли в `deploy/` — `deploy/AGENTS.md`, `deploy/backend/`, `deploy/frontend/`, `deploy/ai-docs/`, `deploy/deploy/`, `deploy/.github/`, `deploy/backup/`, `deploy/nginx/`. Codex продолжает генерировать их в каждом архиве (устойчивая проблема паковки).
+- `deploy/README.md` восстановлен из правильной host-nginx версии (codex её потерял).
+
+### 2026-04-30 — Wave 9 — Hotfixes по второму юзер-тесту + admin moderation
+
+После второго реального теста на проде (got.craft-hookah.ru) пришёл фидбэк, который заблокировал запуск:
+
+- **`backend/apps/games/services.py`** — баг `RsvpStatus.NOT_GOING` (атрибут не существует) ронял PATCH `/sessions/<id>/invites/<id>/` с 500 на любом RSVP-переходе. Заменён на `DECLINED`. Уведомления в `update_rsvp` и `invite_user` обёрнуты в `try/except`, чтобы не валить flow.
+- **`backend/apps/reference/migrations/0004_game_mode_rules.py`** — переписан с правильным UTF-8: «Классика», «Пир воронов», «Танец с драконами», «Мать драконов» (раньше был cp1251→utf-8 мохибейк).
+- **`backend/apps/reference/migrations/0008_fix_mode_names_encoding.py`** — новая идемпотентная data-миграция, чинит уже сохранённый на проде мохибейк. Безопасна на чистой БД (no-op).
+- **`backend/apps/games/views.py` и `backend/apps/ratings/views.py`** — `ErrorHandlingMixin` теперь конвертирует любую необработанную ошибку в структурированный 500 с `code/exception_class/exception_message/trace_tail`. Слепых "Internal Server Error" больше не будет.
+
+Новый функционал:
+
+- **Ретроактивная партия (T-133/F-202):** `POST /api/v1/sessions/<id>/finalize-played/`, страница `frontend/src/pages/FinalizePlayedPage.tsx`. Поток "Только что сыграли" из CreateSessionPage теперь ведёт на новую страницу, проводит сессию `planned → completed` за один шаг с заполнением мест и замков вручную. Создаётся синтетический RoundSnapshot для совместимости с stats/fun_facts.
+- **Admin moderation (T-134/F-203):** 3 endpoint (`GET/POST/POST /api/v1/admin/pending-users/...`), новая permission `IsAdminUser`, страница `/admin/registrations` с подтверждением через двойное нажатие. В сайдбаре виден только staff-юзерам через `adminOnly` флаг в `navigation.ts`. `PrivateUserSerializer` теперь экспонирует `is_staff`/`is_superuser`.
+
+Что осталось на Wave 10: T-135 (force-remove participation), T-136 (votes до finalize — нужен ADR), T-137 (verify pytest suite), T-138 (тесты для finalize_played_session), F-204 (admin badge в TopBar), весь production-hardening блок (I-006..I-010).
+
 ### 2026-04-30 — Architect iteration 7 — Phase 2 closed, deploy pivoted to host-nginx
 
 - **Phase 2 закрыта полностью.** Все 16+ задач Wave 7 приняты (T-119, T-127, T-130, T-131, T-132, F-101, F-102, F-105, F-106, F-108, F-113-F-119) + production deployment fixes.
