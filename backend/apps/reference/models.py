@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from django.contrib.postgres.fields import ArrayField
 from django.core.validators import RegexValidator
 from django.db import models
 
@@ -35,16 +34,8 @@ class GameMode(TimestampedModel):
     max_rounds = models.PositiveSmallIntegerField(default=10)
     description = models.TextField(blank=True)
     westeros_deck_count = models.PositiveSmallIntegerField(default=3)
-    allowed_factions = ArrayField(
-        base_field=models.SlugField(max_length=64),
-        default=list,
-        blank=True,
-    )
-    required_factions = ArrayField(
-        base_field=models.SlugField(max_length=64),
-        default=list,
-        blank=True,
-    )
+    allowed_factions = models.JSONField(default=list, blank=True)
+    required_factions = models.JSONField(default=list, blank=True)
     factions_by_player_count = models.JSONField(default=dict, blank=True)
 
     class Meta:

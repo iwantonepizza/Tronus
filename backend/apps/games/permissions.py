@@ -4,15 +4,23 @@ from rest_framework.permissions import BasePermission
 
 
 class IsPlayerUser(BasePermission):
+    """Allow any active authenticated user.
+
+    We accept ``is_active=True`` as sufficient because auto-activated users are
+    created with ``is_active=True`` directly (skipping the signal that would
+    normally add the ``player`` group).  The group is still added for
+    consistency via ``register_user``, but we no longer gate on it here.
+    """
+
     def has_permission(self, request, view) -> bool:
         user = request.user
         if not user or not user.is_authenticated:
             return False
 
         return bool(
-            user.is_staff
+            user.is_active
+            or user.is_staff
             or user.is_superuser
-            or user.groups.filter(name="player").exists()
         )
 
 

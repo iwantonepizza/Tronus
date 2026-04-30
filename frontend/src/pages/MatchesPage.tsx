@@ -25,6 +25,7 @@ type SortOption = 'newest' | 'oldest' | 'longest'
 
 const statusOptions: Array<{ label: string; value: StatusFilter }> = [
   { label: 'Все', value: 'all' },
+  { label: 'В процессе', value: 'in_progress' },
   { label: 'Сыграны', value: 'completed' },
   { label: 'Запланированы', value: 'planned' },
   { label: 'Отменены', value: 'cancelled' },

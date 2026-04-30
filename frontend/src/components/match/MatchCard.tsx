@@ -14,12 +14,13 @@ export function MatchCard({ match }: MatchCardProps) {
   const winner = match.participations.find(
     (participation) => participation.isWinner,
   )
-  const statusLabel =
-    match.status === 'planned'
-      ? 'Запланирована'
-      : match.status === 'completed'
-        ? 'Сыграна'
-        : 'Отменена'
+  const STATUS_LABEL: Record<string, string> = {
+    planned: 'Запланирована',
+    in_progress: 'В процессе',
+    completed: 'Сыграна',
+    cancelled: 'Отменена',
+  }
+  const statusLabel = STATUS_LABEL[match.status] ?? match.status
 
   return (
     <article className="rounded-[2rem] border border-border-subtle bg-bg-elev1 p-6 shadow-panel transition hover:-translate-y-0.5 hover:border-border-strong">
@@ -29,6 +30,7 @@ export function MatchCard({ match }: MatchCardProps) {
             'rounded-full px-3 py-1 font-mono text-[11px] uppercase tracking-[0.2em]',
             match.status === 'completed' &&
               'bg-emerald-500/12 text-emerald-200',
+            match.status === 'in_progress' && 'bg-blue-500/12 text-blue-200',
             match.status === 'planned' && 'bg-gold/12 text-gold',
             match.status === 'cancelled' && 'bg-red-500/12 text-red-200',
           )}

@@ -310,9 +310,11 @@ function MatchDetailContent({
             <span className="rounded-full bg-gold/12 px-3 py-1 font-mono text-[11px] uppercase tracking-[0.22em] text-gold">
               {match.status === 'completed'
                 ? 'Завершена'
-                : match.status === 'planned'
-                  ? 'Запланирована'
-                  : 'Отменена'}
+                : match.status === 'in_progress'
+                  ? 'В процессе'
+                  : match.status === 'planned'
+                    ? 'Запланирована'
+                    : 'Отменена'}
             </span>
             <span className="rounded-full border border-border-subtle bg-bg-base px-3 py-1 text-xs text-text-secondary">
               Партия #{match.id}

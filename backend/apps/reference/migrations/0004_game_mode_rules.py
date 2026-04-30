@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import django.contrib.postgres.fields
 from django.db import migrations, models
 
 LEGACY_MODE_VALUES = [
@@ -181,12 +180,7 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name="gamemode",
             name="allowed_factions",
-            field=django.contrib.postgres.fields.ArrayField(
-                base_field=models.SlugField(max_length=64),
-                blank=True,
-                default=list,
-                size=None,
-            ),
+            field=models.JSONField(blank=True, default=list),
         ),
         migrations.AddField(
             model_name="gamemode",
@@ -201,12 +195,7 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name="gamemode",
             name="required_factions",
-            field=django.contrib.postgres.fields.ArrayField(
-                base_field=models.SlugField(max_length=64),
-                blank=True,
-                default=list,
-                size=None,
-            ),
+            field=models.JSONField(blank=True, default=list),
         ),
         migrations.AddField(
             model_name="gamemode",

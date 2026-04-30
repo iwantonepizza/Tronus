@@ -3,6 +3,7 @@ from __future__ import annotations
 from typing import TypedDict
 
 from django.conf import settings
+from django.contrib.auth.models import Group
 from django.contrib.auth.password_validation import validate_password
 from django.core.exceptions import ValidationError
 from django.db import transaction
@@ -62,6 +63,12 @@ def register_user(
     )
     user.set_password(password)
     user.save()
+
+    # If auto-activated, add player group immediately (signal only fires on
+    # is_active False→True transition, not on initial creation with is_active=True)
+    if auto_activated:
+        player_group, _ = Group.objects.get_or_create(name="player")
+        user.groups.add(player_group)
 
     Profile.objects.update_or_create(
         user=user,
