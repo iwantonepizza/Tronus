@@ -33,7 +33,9 @@ export function AppShell() {
         </main>
       </div>
       {isMobile ? <BottomNav /> : null}
-      <SearchPalette open={searchOpen} onClose={() => setSearchOpen(false)} />
+      {searchOpen ? (
+        <SearchPalette open={searchOpen} onClose={() => setSearchOpen(false)} />
+      ) : null}
     </div>
   )
 }

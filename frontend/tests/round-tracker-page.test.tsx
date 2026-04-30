@@ -307,7 +307,7 @@ describe('round tracker page', () => {
       target: { value: 'muster' },
     })
     fireEvent.change(deckThreeSelect!, {
-      target: { value: 'white_walkers' },
+      target: { value: 'web_of_lies' },
     })
 
     const submitButton = within(dialog).getAllByRole('button').at(-1)
@@ -324,7 +324,7 @@ describe('round tracker page', () => {
     })
     expect(recordEventCardMock).toHaveBeenNthCalledWith(2, {
       deck_number: 3,
-      card_slug: 'white_walkers',
+      card_slug: 'web_of_lies',
     })
 
     await waitFor(() => {
@@ -357,8 +357,8 @@ describe('round tracker page', () => {
 
     await waitFor(() => {
       expect(replaceParticipantMock).toHaveBeenCalledWith({
-        out_user_id: 11, // first participation user id
-        in_user_id: 99,  // NewPlayer
+        out_user_id: 1, // first participation user id
+        in_user_id: 99, // NewPlayer
       })
     })
 

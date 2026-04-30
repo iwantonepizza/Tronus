@@ -77,7 +77,11 @@ class TestMarkRead:
 
 class TestNotificationListAPI:
     def test_returns_notifications_for_authenticated_user(self, db, auth_client, user):
-        create_notification(user_id=user.pk, kind=Notification.Kind.INVITE_RECEIVED, payload={"session_id": 10})
+        create_notification(
+            user_id=user.pk,
+            kind=Notification.Kind.INVITE_RECEIVED,
+            payload={"session_id": 10},
+        )
         response = auth_client.get("/api/v1/notifications/")
         assert response.status_code == 200
         data = response.json()

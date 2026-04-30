@@ -190,6 +190,24 @@ dcp restart backend
 
 ## Troubleshooting
 
+## Uptime Monitor
+
+Для внешнего uptime-monitor используй:
+
+```text
+GET /api/v1/health/
+```
+
+Ожидаемое поведение:
+- `200` + `{"status":"ok","database":"ok","version":"0.1.0"}` при живой БД.
+- `503` + `{"status":"degraded","database":"error","version":"0.1.0"}` если backend поднят, но Postgres недоступен.
+
+Это endpoint без auth, поэтому его можно подключать в UptimeRobot, Better Stack и аналогичные сервисы.
+
+---
+
+## Troubleshooting
+
 ### `502 Bad Gateway` на `/api/`
 Backend контейнер не отвечает.
 ```bash

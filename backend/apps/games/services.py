@@ -1,14 +1,24 @@
 from __future__ import annotations
 
+import random as _random
 from datetime import datetime
 
 from django.core.exceptions import ValidationError
 from django.db import transaction
 
 from apps.accounts.models import User
+from apps.comments.models import MatchComment
 from apps.reference.models import Faction, GameMode, HouseDeck
 
-from .models import GameSession, Outcome, Participation, RoundSnapshot, SessionInvite
+from .event_cards import WESTEROS_DECKS, WILDLINGS_OUTCOME_CARDS
+from .models import (
+    GameSession,
+    MatchTimelineEvent,
+    Outcome,
+    Participation,
+    RoundSnapshot,
+    SessionInvite,
+)
 
 UNSET = object()
 ALL_FACTION_SLUGS = {
@@ -277,7 +287,9 @@ def start_session(
     _ensure_session_is_planned(session=locked_session)
 
     if not factions_assignment:
-        raise ValidationError({"factions_assignment": ["Необходимо указать хотя бы одного участника."]})
+        raise ValidationError(
+            {"factions_assignment": ["Необходимо указать хотя бы одного участника."]}
+        )
 
     user_ids = list(factions_assignment.keys())
 
@@ -648,7 +660,11 @@ def invite_user(
         payload={
             "session_id": locked_session.pk,
             "invited_by_id": inviter.pk,
-            "invited_by_nickname": getattr(getattr(inviter, "profile", None), "nickname", inviter.username),
+            "invited_by_nickname": getattr(
+                getattr(inviter, "profile", None),
+                "nickname",
+                inviter.username,
+            ),
         },
     )
     return invite
@@ -742,8 +758,6 @@ def withdraw_invite(*, invite: SessionInvite) -> None:
 # T-121: Random faction assignment
 # ---------------------------------------------------------------------------
 
-import random as _random
-
 
 def randomize_factions(*, session: GameSession) -> dict[int, str]:
     """Return a random faction assignment for all going invites (preview, no side effects).
@@ -767,7 +781,12 @@ def randomize_factions(*, session: GameSession) -> dict[int, str]:
     allowed = _get_allowed_factions_for(mode=mode, player_count=player_count)
     if allowed is None:
         raise ValidationError(
-            {"factions": [f"Нет допустимых фракций для {player_count} игроков в режиме '{mode.slug}'."]}
+            {
+                "factions": [
+                    f"Нет допустимых фракций для {player_count} игроков в режиме "
+                    f"'{mode.slug}'."
+                ]
+            }
         )
 
     available = list(allowed)
@@ -790,7 +809,7 @@ def randomize_factions(*, session: GameSession) -> dict[int, str]:
     chosen = chosen[:player_count]
     _random.shuffle(chosen)
 
-    return dict(zip(going_invites, chosen))
+    return dict(zip(going_invites, chosen, strict=True))
 
 # ---------------------------------------------------------------------------
 # T-122: Replace participant (ADR-0013 §replacement)
@@ -810,9 +829,6 @@ def replace_participant(
     A new Participation is created with the same faction.
     A ``participant_replaced`` timeline event is recorded.
     """
-    from apps.comments.models import MatchComment
-    from .models import MatchTimelineEvent
-
     locked_session = _get_locked_session(session_id=session.pk)
     _ensure_session_is_in_progress(session=locked_session)
 
@@ -825,7 +841,11 @@ def replace_participant(
     if out_participation is None:
         raise ValidationError({"out_user": ["Игрок не является активным участником партии."]})
 
-    if Participation.objects.filter(session=locked_session, user=in_user, left_at_round__isnull=True).exists():
+    if Participation.objects.filter(
+        session=locked_session,
+        user=in_user,
+        left_at_round__isnull=True,
+    ).exists():
         raise ValidationError({"in_user": ["Новый игрок уже участвует в этой партии."]})
 
     last_snapshot = (
@@ -884,11 +904,8 @@ def record_wildlings_raid(
     outcome: str,
     outcome_card_slug: str | None = None,
     wildlings_threat_after: int,
-) -> "MatchTimelineEvent":
+) -> MatchTimelineEvent:
     """Record a wildlings raid event (T-102 / ADR-0014)."""
-    from apps.comments.models import MatchComment
-    from .models import MatchTimelineEvent
-    from .event_cards import WILDLINGS_OUTCOME_CARDS
 
     locked_session = _get_locked_session(session_id=session.pk)
     _ensure_session_is_in_progress(session=locked_session)
@@ -897,10 +914,14 @@ def record_wildlings_raid(
         raise ValidationError({"outcome": ["Должно быть 'win' или 'loss'."]})
 
     if wildlings_threat_after not in VALID_WILDLINGS_THREAT:
-        raise ValidationError({"wildlings_threat_after": [f"Недопустимое значение угрозы одичалых."]})
+        raise ValidationError(
+            {"wildlings_threat_after": ["Недопустимое значение угрозы одичалых."]}
+        )
 
     if outcome_card_slug is not None and outcome_card_slug not in WILDLINGS_OUTCOME_CARDS:
-        raise ValidationError({"outcome_card_slug": [f"Неизвестная карта исхода: '{outcome_card_slug}'."]})
+        raise ValidationError(
+            {"outcome_card_slug": [f"Неизвестная карта исхода: '{outcome_card_slug}'."]}
+        )
 
     # Validate bid participation_ids belong to session
     valid_p_ids = set(
@@ -929,7 +950,10 @@ def record_wildlings_raid(
     MatchComment.objects.create(
         session=locked_session,
         author=None,
-        body=f"Летописец: атака одичалых {outcome_text}. Угроза после атаки: {wildlings_threat_after}.",
+        body=(
+            f"Летописец: атака одичалых {outcome_text}. "
+            f"Угроза после атаки: {wildlings_threat_after}."
+        ),
         chronicler_event=event,
     )
     return event
@@ -946,7 +970,7 @@ def record_clash_of_kings(
     session: GameSession,
     actor: User,
     tracks: dict,
-) -> "MatchTimelineEvent":
+) -> MatchTimelineEvent:
     """Record a clash of kings event (T-103 / ADR-0014).
 
     ``tracks`` schema:
@@ -956,9 +980,6 @@ def record_clash_of_kings(
       "influence_court":  [...],
     }
     """
-    from apps.comments.models import MatchComment
-    from .models import MatchTimelineEvent
-
     locked_session = _get_locked_session(session_id=session.pk)
     _ensure_session_is_in_progress(session=locked_session)
 
@@ -1008,11 +1029,8 @@ def record_event_card_played(
     actor: User,
     deck_number: int,
     card_slug: str,
-) -> "MatchTimelineEvent":
+) -> MatchTimelineEvent:
     """Record that an event card was played from a specific Westeros deck (T-104)."""
-    from apps.comments.models import MatchComment
-    from .models import MatchTimelineEvent
-    from .event_cards import WESTEROS_DECKS
 
     locked_session = _get_locked_session(session_id=session.pk)
     _ensure_session_is_in_progress(session=locked_session)

@@ -7,7 +7,7 @@ from django.contrib.auth.models import Group
 from django.utils import timezone
 
 from apps.accounts.models import User
-from apps.games.models import GameSession, Outcome, Participation
+from apps.games.models import GameSession, Outcome, Participation, RoundSnapshot
 from apps.reference.models import Faction, GameMode, HouseDeck
 
 
@@ -102,6 +102,27 @@ def _create_participation(
         castles=castles,
         is_winner=is_winner,
         notes=notes,
+    )
+
+
+def _seed_round_snapshot(
+    *,
+    session: GameSession,
+    participations: list[Participation],
+    castles: list[int],
+) -> None:
+    RoundSnapshot.objects.create(
+        session=session,
+        round_number=1,
+        influence_throne=[p.pk for p in participations],
+        influence_sword=[p.pk for p in participations],
+        influence_court=[p.pk for p in participations],
+        supply={str(p.pk): 1 for p in participations},
+        castles={
+            str(participation.pk): castle_count
+            for participation, castle_count in zip(participations, castles, strict=True)
+        },
+        wildlings_threat=4,
     )
 
 
@@ -500,20 +521,16 @@ def test_finalize_session_creates_outcome(api_client) -> None:
     p1 = _create_participation(session=session, user=creator, faction=reference["stark"])
     p2 = _create_participation(session=session, user=player_one, faction=reference["lannister"])
     p3 = _create_participation(session=session, user=player_two, faction=reference["greyjoy"])
+    session.status = GameSession.Status.IN_PROGRESS
+    session.save(update_fields=["status", "updated_at"])
+    _seed_round_snapshot(session=session, participations=[p1, p2, p3], castles=[7, 5, 3])
     assert api_client.login(username=creator.username, password="StrongPassword123!")
 
     response = api_client.post(
         f"/api/v1/sessions/{session.pk}/finalize/",
         {
-            "rounds_played": 10,
-            "end_reason": Outcome.EndReason.CASTLES_7,
             "mvp": creator.pk,
             "final_note": "  Great match.  ",
-            "participations": [
-                {"id": p1.pk, "place": 1, "castles": 7},
-                {"id": p2.pk, "place": 2, "castles": 5},
-                {"id": p3.pk, "place": 3, "castles": 3},
-            ],
         },
         format="json",
     )
@@ -567,24 +584,19 @@ def test_finalize_session_returns_validation_error_shape(api_client) -> None:
     player_two = _create_user(email="player2@example.com")
     _grant_player_role(user=creator)
     session = _create_session(created_by=creator)
-    p1 = _create_participation(session=session, user=creator, faction=reference["stark"])
-    p2 = _create_participation(session=session, user=player_one, faction=reference["lannister"])
+    _create_participation(session=session, user=creator, faction=reference["stark"])
+    _create_participation(session=session, user=player_one, faction=reference["lannister"])
     _create_participation(session=session, user=player_two, faction=reference["greyjoy"])
     assert api_client.login(username=creator.username, password="StrongPassword123!")
 
     response = api_client.post(
         f"/api/v1/sessions/{session.pk}/finalize/",
         {
-            "rounds_played": 10,
-            "end_reason": Outcome.EndReason.CASTLES_7,
-            "participations": [
-                {"id": p1.pk, "place": 1, "castles": 7},
-                {"id": p2.pk, "place": 2, "castles": 5},
-            ],
+            "mvp": creator.pk,
         },
         format="json",
     )
 
     assert response.status_code == 400
     assert response.json()["error"]["code"] == "validation_error"
-    assert "participations" in response.json()["error"]["details"]
+    assert "session" in response.json()["error"]["details"]

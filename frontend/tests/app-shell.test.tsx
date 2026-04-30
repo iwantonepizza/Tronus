@@ -1,4 +1,4 @@
-import { fireEvent, screen, within } from '@testing-library/react'
+import { fireEvent, screen, waitFor, within } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import App from '@/App'
 import { useLeaderboardStats } from '@/hooks/useStats'
@@ -82,54 +82,57 @@ describe('app shell', () => {
     } as unknown as ReturnType<typeof useLeaderboardStats>)
   })
 
-  it('shows sidebar on desktop and highlights current route', async () => {
+  it('shows desktop shell and highlights current route', async () => {
     installMatchMedia(1280)
     window.history.pushState({}, '', '/matches')
 
     renderApp()
 
-    expect(await screen.findByText(/Лента партий/i)).toBeInTheDocument()
-    expect(screen.getAllByText(/Новая партия/i).length).toBeGreaterThan(0)
-    expect(
-      screen.queryByRole('link', { name: /Главная/i }),
-    ).not.toBeInTheDocument()
+    expect(await screen.findByText('TRONUS')).toBeInTheDocument()
+    expect(screen.getByRole('button')).toBeInTheDocument()
 
-    const activeLink = screen.getByRole('link', { name: /Партии/i })
-    expect(activeLink).toHaveAttribute('aria-current', 'page')
+    const matchesLink = screen.getByRole('link', { current: 'page' })
+    expect(matchesLink).toHaveAttribute('href', '/matches')
+
+    const createLink = screen
+      .getAllByRole('link')
+      .find((link) => link.getAttribute('href') === '/matches/new')
+
+    expect(createLink).toBeDefined()
+    expect(createLink).toHaveAttribute('href', '/matches/new')
   })
 
-  it('shows explicit stubs for search and notifications actions', async () => {
+  it('opens the search palette and hides notifications for guests', async () => {
     installMatchMedia(1280)
     window.history.pushState({}, '', '/matches')
 
     renderApp()
 
-    expect(await screen.findByText(/Лента партий/i)).toBeInTheDocument()
+    fireEvent.click(await screen.findByRole('button'))
 
-    fireEvent.click(
-      screen.getByRole('button', { name: /Поиск по партии и игрокам/i }),
-    )
-    expect(screen.getByText('Поиск скоро будет.')).toBeInTheDocument()
+    const paletteInput = screen.getAllByRole('textbox').at(-1)
 
-    fireEvent.click(screen.getByRole('button', { name: 'Уведомления' }))
-    expect(screen.getByText('Уведомления скоро будут.')).toBeInTheDocument()
+    expect(paletteInput).toBeDefined()
+    await waitFor(() => expect(paletteInput).toHaveFocus())
+    expect(screen.queryByLabelText(/notifications/i)).not.toBeInTheDocument()
   })
 
-  it('shows bottom navigation on mobile and hides sidebar', async () => {
+  it('shows bottom navigation on mobile and hides desktop sidebar', async () => {
     installMatchMedia(390)
     window.history.pushState({}, '', '/leaderboard')
 
     renderApp()
 
-    expect(await screen.findByText('Рейтинги сезона')).toBeInTheDocument()
-    const mobileNav = screen.getByRole('navigation')
+    const navs = await screen.findAllByRole('navigation')
+    expect(navs).toHaveLength(1)
 
-    expect(
-      within(mobileNav).getByRole('link', { name: /^Обзор$/i }),
-    ).toBeInTheDocument()
-    expect(
-      within(mobileNav).getByRole('link', { name: /^Я$/i }),
-    ).toBeInTheDocument()
-    expect(screen.queryByText(/Новая партия/i)).not.toBeInTheDocument()
+    const mobileNav = navs[0]
+    const links = within(mobileNav).getAllByRole('link')
+
+    expect(links).toHaveLength(5)
+    expect(within(mobileNav).getByRole('link', { current: 'page' })).toHaveAttribute(
+      'href',
+      '/leaderboard',
+    )
   })
 })

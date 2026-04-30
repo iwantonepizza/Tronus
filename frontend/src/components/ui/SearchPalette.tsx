@@ -28,20 +28,17 @@ export function SearchPalette({ open, onClose }: SearchPaletteProps) {
 
   // Focus input when palette opens
   useEffect(() => {
-    if (open) {
-      setQuery('')
-      setResults(null)
-      setTimeout(() => inputRef.current?.focus(), 50)
-    }
+    if (!open) return
+
+    const id = setTimeout(() => inputRef.current?.focus(), 50)
+    return () => clearTimeout(id)
   }, [open])
 
   // Fetch results
   useEffect(() => {
     if (debouncedQuery.length < 2) {
-      setResults(null)
       return
     }
-    setLoading(true)
     searchAll(debouncedQuery)
       .then(setResults)
       .catch(() => setResults(null))
@@ -75,6 +72,18 @@ export function SearchPalette({ open, onClose }: SearchPaletteProps) {
     onClose()
   }
 
+  function handleQueryChange(value: string) {
+    setQuery(value)
+
+    if (value.length < 2) {
+      setResults(null)
+      setLoading(false)
+      return
+    }
+
+    setLoading(true)
+  }
+
   return (
     /* Backdrop */
     <div
@@ -96,7 +105,7 @@ export function SearchPalette({ open, onClose }: SearchPaletteProps) {
             ref={inputRef}
             type="text"
             value={query}
-            onChange={(e) => setQuery(e.target.value)}
+            onChange={(e) => handleQueryChange(e.target.value)}
             placeholder="Поиск по игрокам, партиям, фракциям…"
             className="flex-1 bg-transparent text-sm text-text-primary outline-none placeholder:text-text-tertiary"
           />

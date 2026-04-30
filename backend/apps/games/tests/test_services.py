@@ -7,13 +7,16 @@ from django.core.exceptions import ValidationError
 from django.utils import timezone
 
 from apps.accounts.models import User
-from apps.games.models import GameSession, Outcome, Participation
+from apps.games.models import GameSession, Outcome, Participation, RoundSnapshot, SessionInvite
 from apps.games.services import (
     add_participant,
     cancel_session,
+    complete_round,
     create_session,
+    discard_last_round,
     finalize_session,
     remove_participant,
+    start_session,
     update_planning,
     validate_session_setup,
 )
@@ -699,7 +702,7 @@ def test_cancel_session_rejects_completed_session() -> None:
         cancel_session(session=session)
 
     assert exc_info.value.message_dict == {
-        "session": ["Изменять можно только запланированные партии."]
+        "session": ["Отменить можно только запланированную или начатую партию."]
     }
 
 
@@ -715,7 +718,7 @@ def test_cancel_session_rejects_already_cancelled_session() -> None:
         cancel_session(session=session)
 
     assert exc_info.value.message_dict == {
-        "session": ["Изменять можно только запланированные партии."]
+        "session": ["Отменить можно только запланированную или начатую партию."]
     }
 
 
@@ -753,7 +756,7 @@ def _setup_in_progress_session_with_snapshot(
         influence_sword=p_ids,
         influence_court=p_ids,
         supply={str(pid): 1 for pid in p_ids},
-        castles={str(pid): cv for pid, cv in zip(p_ids, castles_values)},
+        castles={str(pid): cv for pid, cv in zip(p_ids, castles_values, strict=False)},
         wildlings_threat=4,
     )
     return session, creator, participations
@@ -772,7 +775,9 @@ def test_finalize_session_creates_outcome_and_completes_session() -> None:
     outcome = finalize_session(session=session, mvp=creator, final_note="  Great match.  ")
 
     session.refresh_from_db()
-    p1.refresh_from_db(); p2.refresh_from_db(); p3.refresh_from_db()
+    p1.refresh_from_db()
+    p2.refresh_from_db()
+    p3.refresh_from_db()
 
     assert outcome.session == session
     assert outcome.mvp == creator
@@ -817,7 +822,8 @@ def test_finalize_session_tiebreak_by_throne() -> None:
 
     # p2 is first on throne track; p1 is second; both have 7 castles
     RoundSnapshot.objects.create(
-        session=session, round_number=1,
+        session=session,
+        round_number=1,
         influence_throne=[p2.pk, p1.pk, p3.pk],
         influence_sword=[p1.pk, p2.pk, p3.pk],
         influence_court=[p1.pk, p2.pk, p3.pk],
@@ -826,8 +832,9 @@ def test_finalize_session_tiebreak_by_throne() -> None:
         wildlings_threat=4,
     )
 
-    outcome = finalize_session(session=session)
-    p1.refresh_from_db(); p2.refresh_from_db()
+    finalize_session(session=session)
+    p1.refresh_from_db()
+    p2.refresh_from_db()
 
     # p2 wins (index 0 on throne), p1 is second
     assert p2.is_winner is True and p2.place == 1
@@ -846,8 +853,11 @@ def test_finalize_session_rejects_when_not_enough_players() -> None:
     session.status = GameSession.Status.IN_PROGRESS
     session.save(update_fields=["status", "updated_at"])
     RoundSnapshot.objects.create(
-        session=session, round_number=1,
-        influence_throne=[p1.pk, p2.pk], influence_sword=[p1.pk, p2.pk], influence_court=[p1.pk, p2.pk],
+        session=session,
+        round_number=1,
+        influence_throne=[p1.pk, p2.pk],
+        influence_sword=[p1.pk, p2.pk],
+        influence_court=[p1.pk, p2.pk],
         supply={str(p1.pk): 1, str(p2.pk): 1},
         castles={str(p1.pk): 7, str(p2.pk): 5},
         wildlings_threat=4,
@@ -896,14 +906,6 @@ def test_finalize_session_rejects_cancelled_session() -> None:
         "session": ["Действие доступно только для партий в процессе игры."]
     }
 
-# ============================================================================
-# T-100: start_session tests
-# ============================================================================
-
-from apps.games.models import RoundSnapshot, SessionInvite
-from apps.games.services import start_session
-
-
 def _add_going_invite(session: GameSession, user: User) -> SessionInvite:
     return SessionInvite.objects.create(
         session=session,
@@ -915,7 +917,7 @@ def _add_going_invite(session: GameSession, user: User) -> SessionInvite:
 @pytest.mark.django_db
 def test_start_session_happy_path() -> None:
     """start_session creates Participations, initial RoundSnapshot, sets status=in_progress."""
-    reference = _ensure_reference_data()
+    _ensure_reference_data()
     creator = _create_user(email="creator_start@example.com")
     p1 = _create_user(email="p1_start@example.com")
     p2 = _create_user(email="p2_start@example.com")
@@ -949,7 +951,7 @@ def test_start_session_happy_path() -> None:
 @pytest.mark.django_db
 def test_start_session_rejects_user_without_going_invite() -> None:
     """start_session raises ValidationError if a user has no going invite."""
-    reference = _ensure_reference_data()
+    _ensure_reference_data()
     creator = _create_user(email="creator_noinvite@example.com")
     p1 = _create_user(email="p1_noinvite@example.com")
     p2 = _create_user(email="p2_noinvite@example.com")
@@ -970,7 +972,7 @@ def test_start_session_rejects_user_without_going_invite() -> None:
 @pytest.mark.django_db
 def test_start_session_rejects_user_with_non_going_rsvp() -> None:
     """start_session rejects user whose RSVP is 'maybe' (not going)."""
-    reference = _ensure_reference_data()
+    _ensure_reference_data()
     creator = _create_user(email="creator_maybe@example.com")
     p1 = _create_user(email="p1_maybe@example.com")
     p2 = _create_user(email="p2_maybe@example.com")
@@ -993,7 +995,7 @@ def test_start_session_rejects_user_with_non_going_rsvp() -> None:
 @pytest.mark.django_db
 def test_start_session_rejects_duplicate_faction() -> None:
     """Duplicate faction in assignment triggers validate_session_setup → ValidationError."""
-    reference = _ensure_reference_data()
+    _ensure_reference_data()
     creator = _create_user(email="creator_dupfac@example.com")
     p1 = _create_user(email="p1_dupfac@example.com")
     p2 = _create_user(email="p2_dupfac@example.com")
@@ -1013,7 +1015,7 @@ def test_start_session_rejects_duplicate_faction() -> None:
 @pytest.mark.django_db
 def test_start_session_rejects_non_planned_session() -> None:
     """start_session on a cancelled session raises ValidationError."""
-    reference = _ensure_reference_data()
+    _ensure_reference_data()
     creator = _create_user(email="creator_cancelled@example.com")
     session = _create_planned_session(created_by=creator)
     session.status = GameSession.Status.CANCELLED
@@ -1028,7 +1030,7 @@ def test_start_session_rejects_non_planned_session() -> None:
 @pytest.mark.django_db
 def test_cancel_session_from_in_progress() -> None:
     """cancel_session works when session is in_progress (ADR-0009)."""
-    reference = _ensure_reference_data()
+    _ensure_reference_data()
     creator = _create_user(email="creator_cancel_inp@example.com")
     p1 = _create_user(email="p1_cancel_inp@example.com")
     p2 = _create_user(email="p2_cancel_inp@example.com")
@@ -1067,16 +1069,8 @@ def test_finalize_session_rejects_planned_session() -> None:
 
     assert "session" in exc_info.value.message_dict
 
-# ============================================================================
-# T-101: complete_round / discard_last_round tests
-# ============================================================================
-
-from apps.games.services import complete_round, discard_last_round
-
-
 def _build_round_payload(participation_ids: list[int]) -> dict:
     """Build a valid round payload for the given participation IDs."""
-    str_ids = {str(pid): 0 for pid in participation_ids}
     return {
         "influence_throne": list(participation_ids),
         "influence_sword": list(participation_ids),
@@ -1097,7 +1091,7 @@ def _start_session_for_test(
         SessionInvite.objects.create(
             session=session, user=user, rsvp_status=SessionInvite.RsvpStatus.GOING
         )
-    assignment = {u.pk: f for u, f in zip(users, factions)}
+    assignment = {u.pk: f for u, f in zip(users, factions, strict=False)}
     result = start_session(session=session, factions_assignment=assignment)
     result.refresh_from_db()
     return list(result.participations.order_by("pk").values_list("pk", flat=True))
@@ -1106,7 +1100,7 @@ def _start_session_for_test(
 @pytest.mark.django_db
 def test_complete_round_creates_next_snapshot() -> None:
     """complete_round creates round 1 after the initial round 0."""
-    reference = _ensure_reference_data()
+    _ensure_reference_data()
     creator = _create_user(email="cr_r1@example.com")
     p1 = _create_user(email="p1_r1@example.com")
     p2 = _create_user(email="p2_r1@example.com")
@@ -1127,7 +1121,7 @@ def test_complete_round_creates_next_snapshot() -> None:
 @pytest.mark.django_db
 def test_complete_round_rejects_non_sequential_round() -> None:
     """Cannot create round 5 if last round is 3."""
-    reference = _ensure_reference_data()
+    _ensure_reference_data()
     creator = _create_user(email="cr_seq@example.com")
     p1 = _create_user(email="p1_seq@example.com")
     p2 = _create_user(email="p2_seq@example.com")
@@ -1150,7 +1144,7 @@ def test_complete_round_rejects_non_sequential_round() -> None:
 @pytest.mark.django_db
 def test_complete_round_rejects_invalid_wildlings_threat() -> None:
     """wildlings_threat not in enum → ValidationError."""
-    reference = _ensure_reference_data()
+    _ensure_reference_data()
     creator = _create_user(email="cr_wt@example.com")
     p1 = _create_user(email="p1_wt@example.com")
     p2 = _create_user(email="p2_wt@example.com")
@@ -1171,7 +1165,7 @@ def test_complete_round_rejects_invalid_wildlings_threat() -> None:
 @pytest.mark.django_db
 def test_complete_round_rejects_wrong_participation_ids() -> None:
     """Supply/castles with wrong keys → ValidationError."""
-    reference = _ensure_reference_data()
+    _ensure_reference_data()
     creator = _create_user(email="cr_wid@example.com")
     p1 = _create_user(email="p1_wid@example.com")
     p2 = _create_user(email="p2_wid@example.com")
@@ -1192,7 +1186,7 @@ def test_complete_round_rejects_wrong_participation_ids() -> None:
 @pytest.mark.django_db
 def test_complete_round_rejects_planned_session() -> None:
     """complete_round on a planned (not in_progress) session → ValidationError."""
-    reference = _ensure_reference_data()
+    _ensure_reference_data()
     creator = _create_user(email="cr_plan@example.com")
     session = _create_planned_session(created_by=creator)
 
@@ -1221,8 +1215,7 @@ def test_complete_round_respects_max_rounds() -> None:
     p3 = _create_user(email="p3_max@example.com")
 
     session = GameSession.objects.create(
-        scheduled_at=__import__("django.utils.timezone", fromlist=["timezone"]).timezone.now()
-        + __import__("datetime").timedelta(days=1),
+        scheduled_at=timezone.now() + timedelta(days=1),
         mode=reference["feast_for_crows"],
         house_deck=reference["original"],
         created_by=creator,
@@ -1245,7 +1238,7 @@ def test_complete_round_respects_max_rounds() -> None:
 @pytest.mark.django_db
 def test_discard_last_round_removes_most_recent() -> None:
     """discard_last_round deletes the most recent snapshot, not round 0."""
-    reference = _ensure_reference_data()
+    _ensure_reference_data()
     creator = _create_user(email="cr_disc@example.com")
     p1 = _create_user(email="p1_disc@example.com")
     p2 = _create_user(email="p2_disc@example.com")
@@ -1266,7 +1259,7 @@ def test_discard_last_round_removes_most_recent() -> None:
 @pytest.mark.django_db
 def test_discard_last_round_refuses_round_zero() -> None:
     """discard_last_round raises if the only snapshot is the initial round 0."""
-    reference = _ensure_reference_data()
+    _ensure_reference_data()
     creator = _create_user(email="cr_disc0@example.com")
     p1 = _create_user(email="p1_disc0@example.com")
     p2 = _create_user(email="p2_disc0@example.com")

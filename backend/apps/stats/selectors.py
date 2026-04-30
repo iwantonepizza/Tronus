@@ -679,7 +679,7 @@ def head_to_head_stats(*, user_a_id: int, user_b_id: int) -> dict[str, Any]:
     }
 
 
-def session_fun_facts(session: "GameSession") -> list[dict[str, str]]:  # type: ignore[name-defined]
+def session_fun_facts(session) -> list[dict[str, str]]:
     """Compute 3-5 interesting facts about a completed session using its round snapshots.
 
     Each fact is a dict with keys: icon (lucide name), title, description.

@@ -10,7 +10,7 @@ class Migration(migrations.Migration):
     initial = True
 
     dependencies = [
-        ('reference', '0002_seed_initial_data'),
+        ('reference', '0006_house_decks_two_variants'),
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
     ]
 
@@ -25,7 +25,7 @@ class Migration(migrations.Migration):
                 ('status', models.CharField(choices=[('planned', 'Planned'), ('completed', 'Completed'), ('cancelled', 'Cancelled')], default='planned', max_length=20)),
                 ('planning_note', models.TextField(blank=True)),
                 ('created_by', models.ForeignKey(on_delete=django.db.models.deletion.PROTECT, related_name='created_sessions', to=settings.AUTH_USER_MODEL)),
-                ('deck', models.ForeignKey(on_delete=django.db.models.deletion.PROTECT, related_name='sessions', to='reference.deck')),
+                ('deck', models.ForeignKey(on_delete=django.db.models.deletion.PROTECT, related_name='sessions', to='reference.housedeck')),
                 ('mode', models.ForeignKey(on_delete=django.db.models.deletion.PROTECT, related_name='sessions', to='reference.gamemode')),
             ],
         ),

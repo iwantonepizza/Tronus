@@ -1,5 +1,4 @@
 import type {
-  ApiTimelineEvent,
   Faction,
   FactionStats,
   FactionSlug,
@@ -13,6 +12,7 @@ import type {
   PlayerStats,
   PublicUser,
 } from '@/mocks/types'
+import type { ApiTimelineEvent } from '@/api/types'
 
 export const mockFactions: Faction[] = [
   {

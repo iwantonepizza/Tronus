@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { AlertTriangle, CheckCircle2, Crown, Loader2, ScrollText, ShieldAlert, Sparkles, X } from 'lucide-react'
+import { AlertTriangle, CheckCircle2, Crown, Loader2, ScrollText, ShieldAlert, Sparkles } from 'lucide-react'
 import { Navigate, useNavigate, useParams } from 'react-router-dom'
 import { Button } from '@/components/ui/Button'
 import { CelebrationOverlay } from '@/components/ui/CelebrationOverlay'
@@ -99,7 +99,8 @@ export function FinalizeSessionPage() {
   }
 
   return (
-    <main className="mx-auto max-w-2xl space-y-6 px-4">
+    <>
+      <main className="mx-auto max-w-2xl space-y-6 px-4">
       <section className="rounded-[2rem] border border-border-subtle bg-bg-elev1 p-6 shadow-panel">
         <div className="flex items-center gap-3 mb-2">
           <ScrollText className="h-5 w-5 text-text-secondary" />
@@ -234,5 +235,6 @@ export function FinalizeSessionPage() {
         </div>
       </div>
     )}
+    </>
   )
 }

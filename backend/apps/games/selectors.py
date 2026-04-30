@@ -4,7 +4,7 @@ from datetime import datetime
 
 from django.db.models import Prefetch, QuerySet
 
-from .models import GameSession, Participation
+from .models import GameSession, MatchTimelineEvent, Participation, RoundSnapshot, SessionInvite
 
 
 def _session_base_queryset() -> QuerySet[GameSession]:
@@ -80,27 +80,15 @@ def list_recent_completed(*, limit: int) -> QuerySet[GameSession]:
     return _session_base_queryset().filter(status=GameSession.Status.COMPLETED)[:limit]
 
 
-# T-101: Round system
-from .models import RoundSnapshot
-
-
 def get_session_rounds(*, session: GameSession) -> QuerySet[RoundSnapshot]:
     """Return all RoundSnapshots for a session, ordered by round_number."""
     return RoundSnapshot.objects.filter(session=session).order_by("round_number")
-
-
-# T-120: Invitations
-from .models import SessionInvite
 
 
 def get_invite_queryset():
     return SessionInvite.objects.select_related(
         "user__profile", "desired_faction", "session"
     ).order_by("created_at")
-
-
-# T-126: Timeline selector
-from .models import MatchTimelineEvent
 
 
 def get_session_timeline(*, session: GameSession) -> QuerySet[MatchTimelineEvent]:

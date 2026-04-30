@@ -2,13 +2,11 @@
 
 from __future__ import annotations
 
-from django.shortcuts import get_object_or_404
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from apps.notifications.models import Notification
 from apps.notifications.selectors import get_notifications_for_user, get_unread_count
 from apps.notifications.serializers import NotificationSerializer
 from apps.notifications.services import mark_all_read, mark_notification_read

@@ -16,6 +16,7 @@ def healthcheck(_: HttpRequest) -> HttpResponse:
 urlpatterns = [
     path("", healthcheck, name="healthcheck"),
     path("admin/", admin.site.urls),
+    path("api/v1/", include("apps.core.urls")),
     path("api/v1/", include("apps.accounts.urls")),
     path("api/v1/", include("apps.avatars.urls")),
     path("api/v1/", include("apps.comments.urls")),

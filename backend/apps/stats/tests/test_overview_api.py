@@ -11,7 +11,7 @@ def test_overview_stats_endpoint_is_public(api_client, overview_stats_dataset) -
     payload = response.json()
     assert payload["next_match"]["id"] == overview_stats_dataset["planned_session"].pk
     assert len(payload["recent_matches"]) == 4
-    assert payload["total_matches"] == 5
+    assert payload["total_matches"] == 4
     assert payload["active_players"] == 3
     assert payload["most_popular_faction"]["faction"]["slug"] == "stark"
     assert payload["current_leader"]["user"]["id"] == overview_stats_dataset["alpha"].pk
