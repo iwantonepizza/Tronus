@@ -156,48 +156,41 @@ Coder **не принимает архитектурных решений** са
 
 | Метрика                             | Значение |
 |-------------------------------------|----------|
-| Закрытых задач                      | 75       |
+| Закрытых задач                      | 91       |
 | Backend tests passing               | 200+     |
 | Frontend tests passing              | 15+      |
-| Backend API endpoints               | ~55 (Wave 7 расширит до ~62) |
-| Frontend pages                      | 21 (Wave 7 добавит +4: error pages) |
+| Backend API endpoints               | ~62      |
+| Frontend pages                      | 21       |
 | ADR принятых                        | 15       |
-| Change requests resolved / cancelled| 7 / 1    |
-| Change requests open                | 2 (CR-008, CR-009) |
+| Change requests resolved / cancelled| 9 / 1    |
+| Change requests open                | 1 (CR-009 — blocked owner) |
 
-**Phase 1 — CLOSED. Phase 2 — IN PROGRESS, ~80% done.**
+**Phase 1 — CLOSED. Phase 2 — CLOSED. Wave 8 — Production hardening + Phase 3 prep.**
 
-**Что сделано в Phase 2 (Waves 5+6):**
+**Что сделано в Phase 2:**
 
-✅ **Wave 5 — auth/hotfix/rules pivot:**
-- Hotfixes: avatar URL, mobile viewport, RSVP кнопки исправлены.
-- Auth: secret word + login email/nick + password reset/change.
-- Reference layer: GameMode rules, House decks → 2 варианта, validate_session_setup engine, русские validation messages.
+✅ **Wave 5 — auth/hotfix/rules pivot:** secret word, login email/nick, password reset/change, GameMode rules, House decks → 2, русские validation messages, hotfixes avatars/mobile.
 
-✅ **Wave 6 — Phase 2 ядро:**
-- Lifecycle расширен: `planned → in_progress → completed` (T-100, ADR-0009).
-- RoundSnapshot модель — immutable snapshot треков партии (T-101, ADR-0010).
-- Invitations & RSVP — отдельная модель `SessionInvite` (T-120, ADR-0013).
-- Random faction assignment, replace participant.
-- Finalize redesign — победитель из последнего snapshot (T-123, CR-007 closed).
-- Timeline events: wildlings raid, clash of kings, event cards, chronicler в comments (T-102/103/104/126, ADR-0014).
-- Frontend: RsvpBlock (F-110), MatchStartPage (F-111), **RoundTrackerPage** (F-112 — главный новый экран), FinalizeSessionPage redesign (F-118).
+✅ **Wave 6 — Phase 2 ядро:** lifecycle расширен (planned/in_progress/completed), RoundSnapshot, SessionInvite, randomize/replace participant, finalize из последнего snapshot, timeline events (wildlings/clash/event_cards), chronicler в comments, frontend RoundTrackerPage.
 
-**Что в Wave 7 (текущая, 16 задач, выдана 2026-04-30):**
-- 🟠 Action modals: F-113 (wildlings UI), F-114 (clash UI), F-115 (event cards UI), F-117 (replace UI).
-- 🟡 Timeline UI: F-116 (timeline component + chronicler hide), F-108 (settings toggle).
-- 🔔 Notifications: T-130 (backend), F-101 (dropdown).
-- 🔍 Search: T-131 (API), F-102 (Cmd+K palette).
-- 🎉 Polish: T-132 + F-119 (fun facts), F-105 (russian translation pass — большая), F-106 (error pages).
-- 🧹 Tech debt: T-127 (CR-008 cleanup), T-119 (stats audit).
+✅ **Wave 7 — Phase 2 завершение:** action modals (wildlings/clash/event-cards/replace UI), timeline UI, notifications subsystem, search Cmd+K, fun facts, русификация, error pages, hide chronicler, технический долг (T-119, T-127). Plus 8 production deployment fixes от codex.
 
-**После Wave 7 — Phase 2 закрыта полностью.**
+**Architect iteration 7 дополнительно:**
+- **Pivot deploy под host-nginx** (сценарий юзера с собственным nginx вне контейнеров): `deploy/docker-compose.prod.yml` без frontend-контейнера, gunicorn на `127.0.0.1:8000`, статика/медиа bind-mount в `/var/www/tronus/`. Готовый конфиг хост-nginx в `deploy/nginx-host/tronus.conf`. Старый bundled-вариант сохранён как fallback.
+- **CR-010**: критичная находка — `.gitignore` исключал `AGENTS.md` и `ai-docs/`, что блокировало архитектурную документацию из git. Также удалены мусорные дубли в `deploy/` (полные зеркала проекта во вложенных директориях).
+
+**Что в Wave 8 (текущая, 12 задач):**
+- 🔴 Production hardening: I-005 (deploy на VPS — owner action, готова инструкция), I-006 (Sentry), I-007 (Postgres backup), I-008 (healthcheck), I-009 (security headers + rate limit), I-010 (dependabot).
+- 🟡 Tech debt: T-129 (verify полный test suite зелёный после wave 6/7).
+- 🟢 Phase 3 первые шаги (после production stable): T-200 (Seasons backend), T-201 (Achievements backend), F-200 (Seasons UI), F-201 (Achievements UI). ADR-0016 от architect.
 
 **Blocked / waiting owner:**
 - CR-009 / T-128 — реальные slugs Westeros карт (placeholder сейчас).
-- I-005..I-009 — Production deployment, выбор платформы.
+- I-005 — нужна реализация на стороне owner: `deploy/README.md` пошаговая инструкция готова.
+- ADR-0016 (Achievements engine) — architect создаст когда дойдём.
 
-**Phase 3 (Gamification)** — Seasons, Achievements, Tournaments — ждёт стабилизации Phase 2 в production.
+**Что ждёт после Wave 8:**
+- Wave 9 — Phase 3 расширение: Tournaments (T-202), F-201 polish, push notifications, легендарные матчи.
 
 ---
 

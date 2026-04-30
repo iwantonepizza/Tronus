@@ -328,6 +328,15 @@ import type {
   WildlingsRaidPayload,
 } from '@/api/types'
 
+async function fetchTimeline(sessionId: number) {
+  if (USE_MOCKS) {
+    const { getMockTimelineForMatch } = await import('@/mocks/data')
+    return getMockTimelineForMatch(sessionId)
+  }
+
+  return listTimeline(sessionId)
+}
+
 export function useStartSession(sessionId: number) {
   const queryClient = useQueryClient()
   return useMutation({
@@ -424,7 +433,7 @@ export function useReplaceParticipant(sessionId: number) {
 export function useTimeline(sessionId: number | null) {
   return useQuery<ApiTimelineEvent[], Error>({
     queryKey: ['timeline', sessionId],
-    queryFn: () => listTimeline(sessionId!),
+    queryFn: () => fetchTimeline(sessionId!),
     enabled: sessionId !== null,
   })
 }

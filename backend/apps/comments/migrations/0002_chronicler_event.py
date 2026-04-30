@@ -11,7 +11,7 @@ class Migration(migrations.Migration):
 
     dependencies = [
         ("comments", "0001_add_match_comment"),
-        ("games", "0004_wave6_timeline"),
+        ("games", "0004_match_timeline_event"),
     ]
 
     operations = [

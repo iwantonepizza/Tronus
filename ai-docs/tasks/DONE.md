@@ -4,6 +4,71 @@
 
 ---
 
+## 2026-04-30 — Wave 7 — Phase 2 завершение (16 задач + production fixes)
+
+Review: `ai-docs/reviews/2026-04-30-batch-wave7.md`. Все приняты.
+
+### Frontend
+
+### 2026-04-30 — F-119: Fun facts modal после finalize
+- agent: claude-sonnet-4-6 — report: `ai-docs/reports/2026-04-30-wave7-complete.md` — **approved**
+
+### 2026-04-30 — F-117: Replace participant UI
+- agent: claude-sonnet-4-6 — report: `ai-docs/reports/2026-04-30-F-117.md` — **approved**
+
+### 2026-04-30 — F-116: Match timeline component + chronicler hide toggle
+- agent: claude-sonnet-4-6 — report: `ai-docs/reports/2026-04-30-F-116.md` — **approved**
+
+### 2026-04-30 — F-115: Event card played UI в RoundTrackerPage
+- agent: Codex — report: `ai-docs/reports/2026-04-30-F-115.md` — **approved**
+
+### 2026-04-30 — F-114: Clash of Kings action UI
+- agent: Codex — report: `ai-docs/reports/2026-04-30-F-114.md` — **approved**
+
+### 2026-04-30 — F-113: Wildlings raid action UI
+- agent: claude-sonnet-4-6 — report: `ai-docs/reports/2026-04-30-wave7-complete.md` — **approved**
+
+### 2026-04-30 — F-108: Hide chronicler toggle в Settings
+- agent: claude-sonnet-4-6 — report: `ai-docs/reports/2026-04-30-wave7-complete.md` — **approved**
+
+### 2026-04-30 — F-106: Custom error pages (404, 500, 403, network)
+- agent: claude-sonnet-4-6 — report: `ai-docs/reports/2026-04-30-wave7-complete.md` — **approved**
+
+### 2026-04-30 — F-105: Russian translation pass
+- agent: claude-sonnet-4-6 — report: `ai-docs/reports/2026-04-30-wave7-complete.md` — **approved**
+
+### 2026-04-30 — F-102: Search command palette (Cmd+K)
+- agent: claude-sonnet-4-6 — report: `ai-docs/reports/2026-04-30-wave7-complete.md` — **approved**
+
+### 2026-04-30 — F-101: Notifications dropdown в TopBar
+- agent: claude-sonnet-4-6 — report: `ai-docs/reports/2026-04-30-wave7-complete.md` — **approved**
+
+### Backend
+
+### 2026-04-30 — T-132: Fun facts service
+- agent: claude-sonnet-4-6 — report: `ai-docs/reports/2026-04-30-wave7-complete.md` — **approved**
+
+### 2026-04-30 — T-131: Search API
+- agent: claude-sonnet-4-6 — report: `ai-docs/reports/2026-04-30-T-131.md` — **approved**
+
+### 2026-04-30 — T-130: In-app notifications backend
+- agent: claude-sonnet-4-6 — report: `ai-docs/reports/2026-04-30-T-130.md` — **approved**
+
+### 2026-04-29 — T-127: CR-008 — cleanup duplicate classes
+- agent: Codex — report: `ai-docs/reports/2026-04-29-T-127.md` — **approved**
+- notes: изначально partial из-за конфликта миграций; конфликт устранён в production fixes
+
+### 2026-04-29 — T-119: Stats endpoints учитывают только status=completed
+- agent: Codex — report: `ai-docs/reports/2026-04-29-T-119.md` — **approved**
+- notes: изначально partial; нашёл реальный дефект в overview.total_matches; исправлено + полный audit с тестами
+
+### Production fixes (8 critical issues)
+
+- agent: claude-sonnet-4-6 — report: `ai-docs/reports/2026-04-30-wave7-complete.md` — **approved_with_pivot**
+- notes: устранены: конфликт миграций 0004*, comments/0002 link, gunicorn dependency, Dockerfile.prod вместо Dockerfile, ENTRYPOINT, .env conditional load, complete env example, nginx timeouts. Дополнительно architect сделал pivot на host-nginx сценарий — см. CR-010.
+
+---
+
 ## 2026-04-30 — Wave 6 — Phase 2 ядро (14 задач)
 
 Review: `ai-docs/reviews/2026-04-30-batch-wave6.md`. Все 14 — approved.

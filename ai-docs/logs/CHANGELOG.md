@@ -4,6 +4,20 @@
 
 ## Unreleased
 
+### 2026-04-30 — Architect iteration 7 — Phase 2 closed, deploy pivoted to host-nginx
+
+- **Phase 2 закрыта полностью.** Все 16+ задач Wave 7 приняты (T-119, T-127, T-130, T-131, T-132, F-101, F-102, F-105, F-106, F-108, F-113-F-119) + production deployment fixes.
+- Codex проактивно устранил 8 критических проблем prod-стека (конфликт миграций, gunicorn dep, Dockerfile.prod, .env loading, и т.д.).
+- **Architect pivot deployment под host-nginx сценарий** (юзер использует nginx вне контейнеров на собственном VPS):
+  - `deploy/docker-compose.prod.yml` переписан: только `db` и `backend` в контейнерах, gunicorn слушает `127.0.0.1:8000`, статика/медиа bind-mount в `/var/www/tronus/`.
+  - Создан `deploy/nginx-host/tronus.conf` — готовый конфиг для копирования.
+  - Старый bundled-стек сохранён как fallback в `deploy/docker-compose.bundled.yml` + `deploy/nginx-bundled/`.
+  - `deploy/README.md` полностью переписан с пошаговой инструкцией.
+- **CR-010**: cleanup `.gitignore` — обнаружено, что `.gitignore` исключал `AGENTS.md` и `ai-docs/`, что фактически блокировало архитектурную документацию из git. Исправлено.
+- Удалены мусорные дубли в `deploy/`: `deploy/AGENTS.md`, `deploy/ai-docs/`, `deploy/backend/`, `deploy/frontend/`, `deploy/frontend-design/`, `deploy/deploy/`, `deploy/.github/`, дубль `deploy/.gitignore`.
+- `frontend/Dockerfile.prod` — поправлен путь к nginx config после переименования директории.
+- Wave 8 (Phase 3 prep + production hardening) — выдана.
+
 ### 2026-04-30 — Architect iteration 6 — Wave 6 closed, Wave 7 outlined
 
 - Batch-review Wave 6 (14 задач) — все приняты, 3 с комментариями.

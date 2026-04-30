@@ -1,4 +1,5 @@
 import type {
+  ApiTimelineEvent,
   Faction,
   FactionStats,
   FactionSlug,
@@ -780,6 +781,13 @@ export const mockMatches: MatchSession[] = matchSeeds.map(buildMatch)
 export const mockCommentsByMatch: Record<number, MatchComment[]> = {
   206: [
     {
+      id: 101,
+      author: null,
+      body: 'Летописец: партия завершена после девятого раунда и позднего рывка Stark.',
+      createdAt: '2026-04-14T20:55:00Z',
+      editedAt: null,
+    },
+    {
       id: 1,
       author: playerById(6),
       body: 'Лейт-гейм получился грязный, но очень красивый. Надо повторить этот состав.',
@@ -823,6 +831,68 @@ export const mockCommentsByMatch: Record<number, MatchComment[]> = {
 
 export function getMockCommentsForMatch(matchId: number): MatchComment[] {
   return [...(mockCommentsByMatch[matchId] ?? [])]
+}
+
+export const mockTimelineByMatch: Record<number, ApiTimelineEvent[]> = {
+  206: [
+    {
+      id: 9001,
+      kind: 'session_started',
+      happened_at: '2026-04-14T17:40:00Z',
+      actor: { id: 1, nickname: 'IronFist' },
+      payload: {},
+      created_at: '2026-04-14T17:40:00Z',
+    },
+    {
+      id: 9002,
+      kind: 'wildlings_raid',
+      happened_at: '2026-04-14T19:10:00Z',
+      actor: { id: 1, nickname: 'IronFist' },
+      payload: {
+        outcome: 'loss',
+        outcome_card_slug: 'horn',
+        wildlings_threat_after: 6,
+      },
+      created_at: '2026-04-14T19:10:00Z',
+    },
+    {
+      id: 9003,
+      kind: 'clash_of_kings',
+      happened_at: '2026-04-14T19:50:00Z',
+      actor: { id: 1, nickname: 'IronFist' },
+      payload: {
+        tracks: {
+          influence_throne: [{ participation_id: 23, bid: 2, place: 1 }],
+          influence_sword: [{ participation_id: 21, bid: 1, place: 1 }],
+          influence_court: [{ participation_id: 25, bid: 3, place: 1 }],
+        },
+      },
+      created_at: '2026-04-14T19:50:00Z',
+    },
+    {
+      id: 9004,
+      kind: 'event_card_played',
+      happened_at: '2026-04-14T20:15:00Z',
+      actor: { id: 1, nickname: 'IronFist' },
+      payload: {
+        deck_number: 2,
+        card_slug: 'storm_of_swords',
+      },
+      created_at: '2026-04-14T20:15:00Z',
+    },
+    {
+      id: 9005,
+      kind: 'session_finalized',
+      happened_at: '2026-04-14T20:50:00Z',
+      actor: { id: 1, nickname: 'IronFist' },
+      payload: {},
+      created_at: '2026-04-14T20:50:00Z',
+    },
+  ],
+}
+
+export function getMockTimelineForMatch(matchId: number): ApiTimelineEvent[] {
+  return [...(mockTimelineByMatch[matchId] ?? [])]
 }
 
 export const mockRecentMatches = mockMatches.filter(

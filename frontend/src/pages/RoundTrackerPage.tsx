@@ -9,6 +9,7 @@ import {
   Flame,
   Loader2,
   Plus,
+  Shuffle,
   Sword,
   Trash2,
   Trophy,
@@ -24,15 +25,18 @@ import {
   useRecordClashOfKings,
   useRecordEventCard,
   useRecordWildlingsRaid,
+  useReplaceParticipant,
   useRounds,
   useSessionDetail,
 } from '@/hooks/useSessions'
+import { useUsers } from '@/hooks/useUsers'
 import type {
   ClashOfKingsPayload,
   EventCardPlayedPayload,
+  ReplaceParticipantPayload,
   WildlingsRaidPayload,
 } from '@/api/types'
-import type { DomainParticipation } from '@/types/domain'
+import type { DomainParticipation, DomainPublicUser } from '@/types/domain'
 import type { ApiRoundSnapshot } from '@/api/types'
 
 const FACTION_COLORS: Record<string, string> = {
@@ -1034,12 +1038,15 @@ export function RoundTrackerPage() {
   const wildlingsRaidMutation = useRecordWildlingsRaid(sessionId!)
   const clashOfKingsMutation = useRecordClashOfKings(sessionId!)
   const eventCardMutation = useRecordEventCard(sessionId!)
+  const replaceMutation = useReplaceParticipant(sessionId!)
+  const usersQuery = useUsers()
 
   const [showForm, setShowForm] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [isWildlingsOpen, setIsWildlingsOpen] = useState(false)
   const [isClashOpen, setIsClashOpen] = useState(false)
   const [isEventCardsOpen, setIsEventCardsOpen] = useState(false)
+  const [isReplaceOpen, setIsReplaceOpen] = useState(false)
   const [toastState, setToastState] = useState<{
     message: string
     type: 'success' | 'error'
@@ -1203,6 +1210,22 @@ export function RoundTrackerPage() {
     }
   }
 
+  const handleReplaceParticipant = async (payload: ReplaceParticipantPayload) => {
+    try {
+      await replaceMutation.mutateAsync(payload)
+      setIsReplaceOpen(false)
+      setToastState({
+        message: 'Замена игрока зафиксирована.',
+        type: 'success',
+      })
+    } catch {
+      setToastState({
+        message: 'Не удалось заменить игрока. Проверьте выбранного пользователя.',
+        type: 'error',
+      })
+    }
+  }
+
   const currentCastles = lastSnapshot
     ? participations.map((participation) => ({
         castles: lastSnapshot.castles[String(participation.id)] ?? 0,
@@ -1334,6 +1357,22 @@ export function RoundTrackerPage() {
             </div>
             <p className="mt-2 text-sm leading-6 text-text-secondary">
               Выбор карт из активных колод с последовательной отправкой в хронологию.
+            </p>
+          </button>
+          <button
+            type="button"
+            aria-label="open-replace-participant"
+            onClick={() => setIsReplaceOpen(true)}
+            className="mt-2 w-full rounded-2xl border border-border-subtle bg-bg-base px-4 py-4 text-left transition hover:border-red-400/30"
+          >
+            <div className="flex items-center gap-2 text-red-300">
+              <Shuffle className="h-4 w-4" />
+              <span className="text-sm font-semibold text-text-primary">
+                Заменить игрока
+              </span>
+            </div>
+            <p className="mt-2 text-sm leading-6 text-text-secondary">
+              Вывести участника из партии и добавить другого пользователя на его место.
             </p>
           </button>
           <div className="mt-4 rounded-2xl border border-border-subtle bg-bg-base px-4 py-3">
@@ -1669,6 +1708,17 @@ export function RoundTrackerPage() {
         />
       ) : null}
 
+      {isReplaceOpen ? (
+        <ReplaceParticipantModal
+          isOpen={isReplaceOpen}
+          isSubmitting={replaceMutation.isPending}
+          onClose={() => setIsReplaceOpen(false)}
+          onSubmit={handleReplaceParticipant}
+          participations={participations}
+          availableUsers={usersQuery.data ?? []}
+        />
+      ) : null}
+
       <Toast
         message={toastState?.message ?? ''}
         onClose={() => setToastState(null)}
@@ -1676,5 +1726,100 @@ export function RoundTrackerPage() {
         visible={toastState !== null}
       />
     </>
+  )
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// ReplaceParticipantModal
+// ─────────────────────────────────────────────────────────────────────────────
+
+interface ReplaceParticipantModalProps {
+  availableUsers: DomainPublicUser[]
+  isOpen: boolean
+  isSubmitting: boolean
+  onClose: () => void
+  onSubmit: (payload: ReplaceParticipantPayload) => Promise<void>
+  participations: DomainParticipation[]
+}
+
+function ReplaceParticipantModal({
+  availableUsers,
+  isOpen,
+  isSubmitting,
+  onClose,
+  onSubmit,
+  participations,
+}: ReplaceParticipantModalProps) {
+  const currentUserIds = new Set(participations.map((p) => p.user.id))
+  const eligibleUsers = availableUsers.filter((u) => !currentUserIds.has(u.id))
+
+  const [outId, setOutId] = useState<string>(
+    participations[0] ? String(participations[0].user.id) : '',
+  )
+  const [inId, setInId] = useState<string>(
+    eligibleUsers[0] ? String(eligibleUsers[0].id) : '',
+  )
+
+  return (
+    <Modal isOpen={isOpen} onClose={onClose} title="Заменить игрока">
+      <div className="space-y-4 p-1">
+        <div>
+          <label className="mb-1.5 block text-xs font-medium uppercase tracking-widest text-text-secondary">
+            Кого выводим
+          </label>
+          <select
+            value={outId}
+            onChange={(e) => setOutId(e.target.value)}
+            className="w-full rounded-2xl border border-border-subtle bg-bg-base px-4 py-2.5 text-sm text-text-primary outline-none focus:border-gold/60"
+          >
+            {participations.map((p) => (
+              <option key={p.user.id} value={String(p.user.id)}>
+                {p.user.nickname} ({p.faction})
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <div>
+          <label className="mb-1.5 block text-xs font-medium uppercase tracking-widest text-text-secondary">
+            Кто заходит
+          </label>
+          {eligibleUsers.length === 0 ? (
+            <p className="rounded-2xl border border-dashed border-border-subtle px-4 py-3 text-sm text-text-tertiary">
+              Нет доступных пользователей для замены.
+            </p>
+          ) : (
+            <select
+              value={inId}
+              onChange={(e) => setInId(e.target.value)}
+              className="w-full rounded-2xl border border-border-subtle bg-bg-base px-4 py-2.5 text-sm text-text-primary outline-none focus:border-gold/60"
+            >
+              {eligibleUsers.map((u) => (
+                <option key={u.id} value={String(u.id)}>
+                  {u.nickname}
+                </option>
+              ))}
+            </select>
+          )}
+        </div>
+
+        <div className="flex justify-end gap-3 pt-2">
+          <Button variant="secondary" onClick={onClose} disabled={isSubmitting}>
+            Отмена
+          </Button>
+          <Button
+            disabled={isSubmitting || !outId || !inId || eligibleUsers.length === 0}
+            onClick={async () => {
+              await onSubmit({
+                out_user_id: Number(outId),
+                in_user_id: Number(inId),
+              })
+            }}
+          >
+            {isSubmitting ? 'Сохраняем…' : 'Заменить'}
+          </Button>
+        </div>
+      </div>
+    </Modal>
   )
 }

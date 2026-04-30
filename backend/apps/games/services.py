@@ -632,12 +632,26 @@ def invite_user(
     if SessionInvite.objects.filter(session=locked_session, user=invitee).exists():
         raise ValidationError({"user": ["Этот пользователь уже приглашён в партию."]})
 
-    return SessionInvite.objects.create(
+    invite = SessionInvite.objects.create(
         session=locked_session,
         user=invitee,
         invited_by=inviter,
         rsvp_status=SessionInvite.RsvpStatus.INVITED,
     )
+
+    # Notify invitee about new invite
+    from apps.notifications.services import create_notification  # noqa: PLC0415
+
+    create_notification(
+        user_id=invitee.pk,
+        kind="invite_received",
+        payload={
+            "session_id": locked_session.pk,
+            "invited_by_id": inviter.pk,
+            "invited_by_nickname": getattr(getattr(inviter, "profile", None), "nickname", inviter.username),
+        },
+    )
+    return invite
 
 
 @transaction.atomic
@@ -689,6 +703,27 @@ def update_rsvp(
     if update_fields:
         update_fields.append("updated_at")
         locked_invite.save(update_fields=update_fields)
+
+    # Notify session creator when invitee responds
+    if rsvp_status is not UNSET_INVITE and str(rsvp_status) in (
+        SessionInvite.RsvpStatus.GOING,
+        SessionInvite.RsvpStatus.NOT_GOING,
+    ):
+        from apps.notifications.services import create_notification  # noqa: PLC0415
+
+        kind = (
+            "invite_accepted"
+            if str(rsvp_status) == SessionInvite.RsvpStatus.GOING
+            else "invite_declined"
+        )
+        create_notification(
+            user_id=locked_invite.session.created_by_id,
+            kind=kind,
+            payload={
+                "session_id": locked_invite.session_id,
+                "user_id": locked_invite.user_id,
+            },
+        )
 
     return locked_invite
 

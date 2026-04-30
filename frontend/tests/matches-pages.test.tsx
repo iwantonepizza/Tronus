@@ -85,4 +85,63 @@ describe('matches pages', () => {
       expect(screen.getByText('Отменена')).toBeInTheDocument()
     })
   })
+
+  it('renders timeline block with events for a completed match', async () => {
+    renderWithProviders(
+      <MemoryRouter initialEntries={['/matches/206']}>
+        <Routes>
+          <Route path="/matches/:id" element={<MatchDetailPage />} />
+        </Routes>
+      </MemoryRouter>,
+    )
+
+    // Timeline section heading
+    expect(await screen.findByText('Хронология партии')).toBeInTheDocument()
+
+    // Known mock events for session 206
+    expect(screen.getByText('Партия началась')).toBeInTheDocument()
+    expect(screen.getByText('Атака одичалых')).toBeInTheDocument()
+    expect(screen.getByText('Битва королей')).toBeInTheDocument()
+    expect(screen.getByText('Партия финализирована')).toBeInTheDocument()
+  })
+
+  it('toggles chronicler messages in comment thread via localStorage', async () => {
+    // Start with no persisted preference
+    window.localStorage.removeItem('tronus.chat.hideChronicler')
+
+    renderWithProviders(
+      <MemoryRouter initialEntries={['/matches/206']}>
+        <Routes>
+          <Route path="/matches/:id" element={<MatchDetailPage />} />
+        </Routes>
+      </MemoryRouter>,
+    )
+
+    // Session 206 has a chronicler comment (author: null) — toggle button must appear
+    const toggleButton = await screen.findByText('Скрыть летописца')
+    expect(toggleButton).toBeInTheDocument()
+
+    // Chronicler message is visible before toggle
+    expect(
+      screen.getByText(
+        /Летописец: партия завершена после девятого раунда/i,
+      ),
+    ).toBeInTheDocument()
+
+    // Click to hide
+    fireEvent.click(toggleButton)
+
+    // Button label flips
+    expect(screen.getByText('Показать летописца')).toBeInTheDocument()
+
+    // Chronicler message hidden
+    expect(
+      screen.queryByText(
+        /Летописец: партия завершена после девятого раунда/i,
+      ),
+    ).not.toBeInTheDocument()
+
+    // localStorage persisted the preference
+    expect(window.localStorage.getItem('tronus.chat.hideChronicler')).toBe('1')
+  })
 })

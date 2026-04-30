@@ -22,6 +22,7 @@ urlpatterns = [
     path("api/v1/", include("apps.games.urls")),
     path("api/v1/", include("apps.ratings.urls")),
     path("api/v1/", include("apps.stats.urls")),
+    path("api/v1/", include("apps.notifications.urls")),
     path("api/v1/reference/", include("apps.reference.urls")),
 ]
 

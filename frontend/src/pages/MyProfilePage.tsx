@@ -129,6 +129,10 @@ export function MyProfilePage() {
       <section className="rounded-[2rem] border border-border-subtle bg-bg-elev1 p-6 shadow-panel">
         <ChangePasswordForm />
       </section>
+
+      <section className="rounded-[2rem] border border-border-subtle bg-bg-elev1 p-6 shadow-panel">
+        <ChatPreferences />
+      </section>
     </main>
   )
 }
@@ -371,6 +375,52 @@ function ChangePasswordForm() {
           {isSubmitting ? 'Меняем...' : 'Сменить пароль'}
         </Button>
       </form>
+    </>
+  )
+}
+
+const HIDE_CHRONICLER_KEY = 'tronus.chat.hideChronicler'
+
+function ChatPreferences() {
+  const [hideChronicler, setHideChronicler] = useState(
+    () => typeof window !== 'undefined' && window.localStorage.getItem(HIDE_CHRONICLER_KEY) === '1',
+  )
+
+  const toggle = () => {
+    const next = !hideChronicler
+    setHideChronicler(next)
+    window.localStorage.setItem(HIDE_CHRONICLER_KEY, next ? '1' : '0')
+  }
+
+  return (
+    <>
+      <h2 className="font-display text-2xl text-text-primary">Настройки чата</h2>
+      <p className="mt-2 text-sm text-text-secondary">
+        Глобальные предпочтения для комментариев к партиям.
+      </p>
+      <div className="mt-5 flex items-center justify-between gap-4 rounded-2xl border border-border-subtle bg-bg-base px-4 py-3">
+        <div>
+          <p className="text-sm font-medium text-text-primary">Скрывать сообщения летописца</p>
+          <p className="mt-0.5 text-xs text-text-tertiary">
+            Системные события в чате (начало, завершение, замена) будут скрыты.
+          </p>
+        </div>
+        <button
+          type="button"
+          role="switch"
+          aria-checked={hideChronicler}
+          onClick={toggle}
+          className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors ${
+            hideChronicler ? 'bg-gold' : 'bg-bg-elev2'
+          }`}
+        >
+          <span
+            className={`inline-block h-5 w-5 transform rounded-full bg-white shadow transition-transform ${
+              hideChronicler ? 'translate-x-5' : 'translate-x-0'
+            }`}
+          />
+        </button>
+      </div>
     </>
   )
 }

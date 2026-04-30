@@ -64,7 +64,7 @@ export interface Outcome {
 
 export interface MatchComment {
   id: number
-  author: PublicUser
+  author: PublicUser | null
   body: string
   createdAt: string
   editedAt: string | null

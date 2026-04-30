@@ -9,6 +9,7 @@ const discardLastRoundMock = vi.fn()
 const recordWildlingsRaidMock = vi.fn()
 const recordClashOfKingsMock = vi.fn()
 const recordEventCardMock = vi.fn()
+const replaceParticipantMock = vi.fn()
 
 const sessionDetail = {
   id: 999,
@@ -138,6 +139,19 @@ vi.mock('@/hooks/useSessions', () => ({
     isPending: false,
     mutateAsync: recordEventCardMock,
   }),
+  useReplaceParticipant: () => ({
+    isPending: false,
+    mutateAsync: replaceParticipantMock,
+  }),
+}))
+
+vi.mock('@/hooks/useUsers', () => ({
+  useUsers: () => ({
+    data: [
+      { id: 99, nickname: 'NewPlayer', favoriteFaction: null, currentAvatarUrl: null, dateJoined: '2026-01-01T00:00:00Z' },
+    ],
+    isLoading: false,
+  }),
 }))
 
 describe('round tracker page', () => {
@@ -147,6 +161,7 @@ describe('round tracker page', () => {
     recordWildlingsRaidMock.mockReset()
     recordClashOfKingsMock.mockReset()
     recordEventCardMock.mockReset()
+    replaceParticipantMock.mockReset()
     recordWildlingsRaidMock.mockResolvedValue({
       id: 501,
     })
@@ -310,6 +325,41 @@ describe('round tracker page', () => {
     expect(recordEventCardMock).toHaveBeenNthCalledWith(2, {
       deck_number: 3,
       card_slug: 'white_walkers',
+    })
+
+    await waitFor(() => {
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+    })
+  })
+
+  it('opens replace participant modal and submits correct payload', async () => {
+    replaceParticipantMock.mockResolvedValue({ id: 11 })
+
+    renderWithProviders(
+      <MemoryRouter initialEntries={['/matches/999/rounds']}>
+        <Routes>
+          <Route path="/matches/:id/rounds" element={<RoundTrackerPage />} />
+        </Routes>
+      </MemoryRouter>,
+    )
+
+    expect(await screen.findByText('Заменить игрока')).toBeInTheDocument()
+
+    fireEvent.click(screen.getByLabelText('open-replace-participant'))
+
+    const dialog = await screen.findByRole('dialog')
+    expect(within(dialog).getByText('Кого выводим')).toBeInTheDocument()
+    expect(within(dialog).getByText('Кто заходит')).toBeInTheDocument()
+
+    // Select the only eligible user (NewPlayer, id=99)
+    const confirmButton = within(dialog).getByRole('button', { name: /Заменить/i })
+    fireEvent.click(confirmButton)
+
+    await waitFor(() => {
+      expect(replaceParticipantMock).toHaveBeenCalledWith({
+        out_user_id: 11, // first participation user id
+        in_user_id: 99,  // NewPlayer
+      })
     })
 
     await waitFor(() => {

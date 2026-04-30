@@ -682,29 +682,203 @@ Owner и architect решают платформу. Без этого — нел
 
 ### I-006: Sentry / error monitoring
 
-**Phase:** 2
+**Phase:** 2.5
 **Depends on:** I-005
 
-### I-007: Postgres backup strategy
+#### Scope
+- Backend: `sentry-sdk[django]` в `requirements.in`; init в `config/settings/prod.py` через env `SENTRY_DSN`. При пустом DSN — Sentry отключён (для dev).
+- Frontend: `@sentry/react` в `package.json`; init в `main.tsx` через `import.meta.env.VITE_SENTRY_DSN`.
+- `.env.example` обновлены с SENTRY_DSN.
+- Free tier Sentry даёт 5K events/month — достаточно для closed-group.
 
-**Phase:** 2
+#### Acceptance
+- [ ] При установленном DSN — exception во view попадает в Sentry.
+- [ ] При пустом DSN — никаких ошибок инициализации.
+- [ ] Source maps загружаются для frontend ошибок.
+
+### I-007: Postgres backup automation
+
+**Phase:** 2.5
 **Depends on:** I-005
 
-### I-008: GitHub dependabot
+#### Scope
+- Shell-скрипт `deploy/scripts/backup-db.sh`:
+  - `docker compose ... exec db pg_dump -U $POSTGRES_USER $POSTGRES_DB | gzip > /var/backups/tronus/tronus_$(date +%Y%m%d_%H%M).sql.gz`
+  - Ротация: удалять старше 7 дней (`find ... -mtime +7 -delete`).
+- `deploy/scripts/restore-db.sh` — обратная процедура (опасная, требует confirm).
+- Инструкция по systemd timer или cron:
+  ```
+  0 3 * * * /home/$USER/tronus/deploy/scripts/backup-db.sh
+  ```
+- Документация в `deploy/README.md` секция Backup.
 
-**Phase:** 2
+#### Acceptance
+- [ ] Скрипт запускается, создаёт `.sql.gz`.
+- [ ] Старые бэкапы удаляются по расписанию.
+- [ ] Restore-скрипт восстанавливает БД из бэкапа на чистом stack'е (тест на staging).
+
+### I-008: Healthcheck endpoint
+
+**Phase:** 2.5
+**Depends on:** —
+**Type:** small
+
+#### Scope
+- `GET /api/v1/health/` — без auth, возвращает:
+  ```json
+  {"status": "ok", "database": "ok", "version": "0.1.0"}
+  ```
+  Если БД недоступна — `{"status": "degraded", "database": "error"}` со статусом 503.
+- Реализация: `apps/core/views.py::HealthCheckView`, простая проверка через `connection.cursor().execute("SELECT 1")`.
+- Документация в `deploy/README.md` — для внешних uptime-monitor'ов (UptimeRobot, BetterStack, и т.д.).
+
+#### Acceptance
+- [ ] `curl /api/v1/health/` → 200 при работающей БД.
+- [ ] При остановленной БД → 503.
+- [ ] Без auth доступен.
+
+### I-009: Security headers + rate limiting hardening
+
+**Phase:** 2.5
+**Depends on:** I-005
+
+#### Scope
+- В `config/settings/prod.py` — добавить:
+  ```python
+  SECURE_BROWSER_XSS_FILTER = True
+  SECURE_CONTENT_TYPE_NOSNIFF = True
+  X_FRAME_OPTIONS = "DENY"
+  SECURE_REFERRER_POLICY = "same-origin"
+  ```
+- В `deploy/nginx-host/tronus.conf` — добавить хедеры на server-уровне:
+  ```
+  add_header X-Frame-Options "DENY" always;
+  add_header X-Content-Type-Options "nosniff" always;
+  add_header Referrer-Policy "same-origin" always;
+  add_header Permissions-Policy "camera=(), microphone=(), geolocation=()" always;
+  ```
+- CSP — минимальный для SPA, тестировать чтобы не сломать React/Vite assets.
+- Глобальный rate-limit на `/api/v1/auth/*`: уже есть на login/register; добавить на password-reset (T-111). Достаточно `django-ratelimit`.
+
+#### Acceptance
+- [ ] `curl -I https://домен/` показывает security headers.
+- [ ] Брутфорс на `/auth/password/reset/` блокируется после 5 попыток в минуту с IP.
+
+### I-010: GitHub dependabot
+
+**Phase:** 2.5
+**Type:** chore
+
+#### Scope
+- `.github/dependabot.yml` — auto-update для pip и npm раз в неделю.
 
 ### F-107: Production manifest, favicon, OG tags
 
-**Phase:** 2
+**Phase:** 2.5
 
-`<title>`, OG image, manifest.json.
+`<title>Tronus</title>`, `<meta og:*>`, `manifest.json`, favicon set (16/32/180/192/512).
 
 ---
 
-# 🎯 Phase 3 — Gamification (стоит за Phase 2)
+# 🎯 Phase 3 — Gamification
 
-Без изменений: Seasons (T-200), Achievements (T-201), Tournaments (T-202), Push notifications. Все ждут стабилизации Phase 2.
+После стабилизации production. Все ждут I-005..I-009 закрытыми.
+
+### T-200: Seasons backend
+
+**Phase:** 3
+**Depends on:** I-005..I-009
+
+#### Scope
+- Модель `Season(name, slug, start_at, end_at, is_current)`. Только один `is_current=True` (через partial unique constraint).
+- `GameSession.season` — FK nullable. Заполняется в `finalize_session` по `scheduled_at` ∈ [season.start_at, season.end_at].
+- Селекторы stats принимают опциональный `season_slug`.
+- API: `GET /api/v1/seasons/`, `GET /api/v1/seasons/<slug>/`, `GET /api/v1/stats/seasons/<slug>/overview/`, `.../leaderboard/`.
+- Admin: создание/редактирование сезонов; action «Сделать текущим» (атомарно, гарантирует единственность).
+
+#### Acceptance
+- [ ] Сессия, финализированная в период сезона, автоматически получает `season=N`.
+- [ ] Stats overview можно фильтровать по сезону.
+- [ ] Только один `is_current=True`.
+
+### T-201: Achievements backend
+
+**Phase:** 3
+**Depends on:** T-200, ADR-0016 (создаст architect)
+
+#### Pre-work (architect)
+**ADR-0016:** Achievement system — triggered (signals) vs scheduled (Celery beat)?
+- **Рекомендация:** triggered через `post_save(GameSession)` signal на статус completed. Простые правила вычисляются Python-функциями. Никакого Celery в Phase 3.
+- Отложенные/тяжёлые ачивки (например, «победил 5 разных игроков») — отдельным сервисом `recompute_achievements_for_user(user)` который вызывается раз в час cron'ом или admin action'ом.
+
+#### Scope
+- Модель `Achievement(slug, title, description, icon_slug)` — статический справочник в seed.
+- Модель `UserAchievement(user, achievement, unlocked_at, progress_current, progress_target)`.
+- Триггеры: `apps/achievements/triggers.py` — функции вида `check_first_win(user)`, `check_5_wins(user)`, и т.д. Запускаются из `post_save(GameSession)` signal.
+- API: `GET /api/v1/users/<id>/achievements/` — список с прогрессом.
+- Минимальный набор 10 ачивок:
+  - first_win, five_wins, ten_wins
+  - ten_games, fifty_games
+  - win_streak_3, win_streak_5
+  - all_factions (играл за все 8)
+  - chronicler (написал 20 комментов)
+  - king_of_crowns (получил 10 корон)
+
+#### Acceptance
+- [ ] При финализации сессии триггеры срабатывают.
+- [ ] Идемпотентность: не дублируются записи UserAchievement.
+- [ ] Прогресс отображается даже для невыполненных.
+
+### F-200: Seasons UI
+
+**Phase:** 3
+**Depends on:** T-200
+
+Селектор сезона на главной/leaderboard, отфильтрованная статистика, баннер «Чемпион сезона».
+
+### F-201: Achievements page
+
+**Phase:** 3
+**Depends on:** T-201
+
+Grid карточек, экран 7.20 из `DESIGN_BRIEF.md`. Полученные / не полученные. Drawer с подробностями ачивки на клик.
+
+### T-202: Tournaments
+
+**Phase:** 3.5
+**Depends on:** T-200
+
+Серии турнирных партий с общей таблицей. Откладываем до реального запроса от друзей.
+
+---
+
+# Меньшие задачи и tech debt
+
+- **T-082:** pytest-cov gate (closed, see DONE.md).
+- **F-016:** a11y audit (closed, see DONE.md).
+- **T-118:** Audit для удаления `expansion_a/b` (closed, see DONE.md).
+- **T-119:** Stats endpoints учитывают только `status=completed` (closed, see DONE.md).
+- **T-127:** CR-008 cleanup duplicates (closed, see DONE.md).
+
+### T-129: Verify полный test suite зелёный end-to-end
+
+**Phase:** 2.5
+**Type:** chore / verify
+
+#### Scope
+- `cd backend && docker compose up -d db && pytest -v` — все тесты зелёные (включая миграции на чистой БД).
+- `cd frontend && npm test` — зелёный.
+- Если что-то красное — fix; никаких новых тестов писать НЕ нужно.
+- Особенно проверить что:
+  - Конфликт миграций `0004*` действительно устранён.
+  - `comments/0002` правильно ссылается на `games/0004_match_timeline_event`.
+  - Тесты T-119 проходят без `--nomigrations`.
+  - T-127 cleanup не сломал импорты.
+
+#### Acceptance
+- [ ] `pytest backend/` → all passing на чистой БД.
+- [ ] `npm test` (frontend) → all passing.
+- [ ] CI workflow зелёный на следующем push.
 
 ---
 

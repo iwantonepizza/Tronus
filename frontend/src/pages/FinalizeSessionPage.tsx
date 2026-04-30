@@ -1,7 +1,8 @@
 import { useState } from 'react'
-import { AlertTriangle, CheckCircle2, Crown, Loader2, ScrollText, ShieldAlert } from 'lucide-react'
+import { AlertTriangle, CheckCircle2, Crown, Loader2, ScrollText, ShieldAlert, Sparkles, X } from 'lucide-react'
 import { Navigate, useNavigate, useParams } from 'react-router-dom'
 import { Button } from '@/components/ui/Button'
+import { CelebrationOverlay } from '@/components/ui/CelebrationOverlay'
 import { useFinalizeSession, useRounds, useSessionDetail } from '@/hooks/useSessions'
 
 const FACTION_COLORS: Record<string, string> = {
@@ -36,6 +37,8 @@ export function FinalizeSessionPage() {
   const [finalNote, setFinalNote] = useState('')
   const [mvpId, setMvpId] = useState<number | null>(null)
   const [confirmed, setConfirmed] = useState(false)
+  const [funFacts, setFunFacts] = useState<Array<{ icon: string; title: string; description: string }>>([])
+  const [showFacts, setShowFacts] = useState(false)
 
   if (sessionId === null) return <Navigate replace to="/404" />
 
@@ -84,8 +87,14 @@ export function FinalizeSessionPage() {
   const handleFinalize = async () => {
     if (!confirmed) { setConfirmed(true); return }
     try {
-      await finalizeMutation.mutateAsync({ mvp: mvpId, final_note: finalNote })
-      navigate(`/matches/${sessionId}`, { replace: true })
+      const outcome = await finalizeMutation.mutateAsync({ mvp: mvpId, final_note: finalNote })
+      const facts = (outcome as { fun_facts?: typeof funFacts })?.fun_facts ?? []
+      if (facts.length > 0) {
+        setFunFacts(facts)
+        setShowFacts(true)
+      } else {
+        navigate(`/matches/${sessionId}`, { replace: true })
+      }
     } catch { setConfirmed(false) }
   }
 
@@ -197,5 +206,33 @@ export function FinalizeSessionPage() {
         </section>
       )}
     </main>
+
+    {/* Fun facts modal */}
+    {showFacts && (
+      <div className="fixed inset-0 z-50 flex items-center justify-center px-4 bg-black/70 backdrop-blur-sm">
+        <div className="w-full max-w-md relative rounded-[2rem] border border-border-subtle bg-bg-elev1 p-6 shadow-panel overflow-hidden">
+          <CelebrationOverlay color={FACTION_COLORS[ranked[0]?.faction ?? ''] ?? '#d4af37'} />
+          <div className="flex items-center gap-3 mb-4">
+            <Sparkles className="h-5 w-5 text-gold" />
+            <h2 className="font-display text-2xl text-text-primary">Итоги партии</h2>
+          </div>
+          <div className="space-y-3">
+            {funFacts.map((fact, i) => (
+              <div key={i} className="rounded-2xl border border-border-subtle bg-bg-base px-4 py-3">
+                <p className="text-sm font-semibold text-text-primary">{fact.title}</p>
+                <p className="mt-1 text-xs text-text-secondary leading-5">{fact.description}</p>
+              </div>
+            ))}
+          </div>
+          <button
+            type="button"
+            onClick={() => { setShowFacts(false); navigate(`/matches/${sessionId}`, { replace: true }) }}
+            className="mt-5 w-full rounded-2xl border border-gold bg-gold/10 py-2.5 text-sm font-medium text-gold transition hover:bg-gold/20"
+          >
+            К карточке партии
+          </button>
+        </div>
+      </div>
+    )}
   )
 }

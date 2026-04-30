@@ -40,10 +40,18 @@ class UserSummarySerializer(serializers.ModelSerializer):
 
 class OutcomeSerializer(serializers.ModelSerializer):
     mvp = UserSummarySerializer(read_only=True)
+    fun_facts = serializers.SerializerMethodField()
 
     class Meta:
         model = Outcome
-        fields = ("rounds_played", "end_reason", "mvp", "final_note")
+        fields = ("rounds_played", "end_reason", "mvp", "final_note", "fun_facts")
+
+    def get_fun_facts(self, obj: Outcome) -> list:
+        from apps.stats.selectors import session_fun_facts
+        try:
+            return session_fun_facts(obj.session)
+        except Exception:
+            return []
 
 
 class ParticipationSerializer(serializers.ModelSerializer):

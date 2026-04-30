@@ -12,6 +12,7 @@ import {
 } from 'lucide-react'
 import { Link, Navigate, useLocation, useParams } from 'react-router-dom'
 import { CommentThread } from '@/components/comments/CommentThread'
+import { MatchTimeline } from '@/components/match/MatchTimeline'
 import { PlacementRow } from '@/components/match/PlacementRow'
 import { RsvpBlock } from '@/components/match/RsvpBlock'
 import { VoteButtons } from '@/components/match/VoteButtons'
@@ -19,9 +20,10 @@ import { PlayerPill } from '@/components/player/PlayerPill'
 import { StatTile } from '@/components/stats/StatTile'
 import { Button } from '@/components/ui/Button'
 import { Toast } from '@/components/ui/Toast'
+import type { ApiTimelineEvent } from '@/api/types'
 import { useComments, usePostComment } from '@/hooks/useComments'
 import { useAuth } from '@/hooks/useAuth'
-import { useCancelSession, useSessionDetail } from '@/hooks/useSessions'
+import { useCancelSession, useSessionDetail, useTimeline } from '@/hooks/useSessions'
 import {
   useCastVote,
   useDeleteVote,
@@ -47,9 +49,15 @@ export function MatchDetailPage() {
   const { user } = useAuth()
   const sessionQuery = useSessionDetail(sessionId)
   const commentsQuery = useComments(sessionId)
+  const timelineQuery = useTimeline(sessionId)
   const votesQuery = useVotes(sessionId)
 
-  if (sessionQuery.isLoading || commentsQuery.isLoading || votesQuery.isLoading) {
+  if (
+    sessionQuery.isLoading ||
+    commentsQuery.isLoading ||
+    votesQuery.isLoading ||
+    timelineQuery.isLoading
+  ) {
     return (
       <main className="space-y-6">
         <section className="rounded-[2rem] border border-border-subtle bg-bg-elev1 p-6 shadow-panel">
@@ -88,6 +96,9 @@ export function MatchDetailPage() {
       comments={commentsQuery.data ?? []}
       currentUser={user}
       initialMatch={match}
+      timelineEvents={timelineQuery.data ?? []}
+      timelineIsError={timelineQuery.isError}
+      timelineIsLoading={timelineQuery.isLoading}
       initialVotes={votesQuery.data ?? []}
     />
   )
@@ -97,11 +108,17 @@ function MatchDetailContent({
   comments,
   currentUser,
   initialMatch,
+  timelineEvents,
+  timelineIsError,
+  timelineIsLoading,
   initialVotes,
 }: {
   comments: DomainComment[]
   currentUser: ReturnType<typeof useAuth>['user']
   initialMatch: NonNullable<ReturnType<typeof useSessionDetail>['data']>
+  timelineEvents: ApiTimelineEvent[]
+  timelineIsError: boolean
+  timelineIsLoading: boolean
   initialVotes: DomainVote[]
 }) {
   const postCommentMutation = usePostComment(initialMatch.id)
@@ -430,6 +447,12 @@ function MatchDetailContent({
                 </p>
               </section>
             ) : null}
+
+            <MatchTimeline
+              events={timelineEvents}
+              isError={timelineIsError}
+              isLoading={timelineIsLoading}
+            />
 
             <section className="rounded-[2rem] border border-border-subtle bg-bg-elev1 p-5 shadow-panel">
               <div className="flex items-center justify-between gap-3">

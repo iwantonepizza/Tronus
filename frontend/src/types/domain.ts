@@ -99,7 +99,7 @@ export interface DomainOutcome {
 
 export interface DomainComment {
   id: number
-  author: DomainPublicUser
+  author: DomainPublicUser | null
   body: string
   createdAt: string
   editedAt: string | null

@@ -13,6 +13,7 @@ from .views import (
     PublicUserDetailView,
     PublicUserListView,
     RegisterView,
+    SearchView,
 )
 
 app_name = "accounts"
@@ -28,4 +29,5 @@ urlpatterns = [
     path("users/", PublicUserListView.as_view(), name="user-list"),
     path("users/<int:user_id>/", PublicUserDetailView.as_view(), name="user-detail"),
     path("users/<int:user_id>/profile/", ProfileUpdateView.as_view(), name="profile-update"),
+    path("search/", SearchView.as_view(), name="search"),
 ]

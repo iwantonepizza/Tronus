@@ -280,3 +280,57 @@ class ProfileUpdateView(APIView):
             )
 
         return Response(PrivateUserSerializer(profile.user, context={"request": request}).data)
+
+
+class SearchView(APIView):
+    """Global search: users, sessions, factions. GET /api/v1/search/?q=<query>
+
+    Anonymous read is intentional (ADR-0005). Returns max 5 results per type.
+    """
+
+    permission_classes = [AllowAny]
+    LIMIT = 5
+
+    def get(self, request: HttpRequest, *args: Any, **kwargs: Any) -> Response:
+        q = request.query_params.get("q", "").strip()
+        if len(q) < 2:
+            return Response({"users": [], "sessions": [], "factions": []})
+
+        # Import models lazily to avoid circular imports
+        from apps.accounts.models import Profile
+        from apps.games.models import GameSession
+        from apps.reference.models import Faction
+
+        users = list(
+            Profile.objects.filter(nickname__icontains=q)
+            .select_related("user")
+            .values("user__id", "nickname")[:self.LIMIT]
+        )
+
+        sessions = list(
+            GameSession.objects.filter(planning_note__icontains=q)
+            .values("id", "planning_note", "status", "scheduled_at")[:self.LIMIT]
+        )
+
+        factions = list(
+            Faction.objects.filter(name__icontains=q)
+            .values("slug", "name")[:self.LIMIT]
+        )
+
+        return Response(
+            {
+                "users": [
+                    {"id": u["user__id"], "nickname": u["nickname"]} for u in users
+                ],
+                "sessions": [
+                    {
+                        "id": s["id"],
+                        "planning_note": s["planning_note"],
+                        "status": s["status"],
+                        "scheduled_at": s["scheduled_at"],
+                    }
+                    for s in sessions
+                ],
+                "factions": factions,
+            }
+        )

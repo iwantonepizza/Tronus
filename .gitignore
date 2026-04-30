@@ -28,12 +28,14 @@ frontend/vite-*.err.log
 .env.local
 .env.*.local
 
+# Production env files (только example в git)
+deploy/env/*.env
+!deploy/env/*.env.example
+
 # IDE
 .idea/
 .vscode/
 .DS_Store
 
-
- # AI DOCS
-AGENTS.md
-ai-docs/
+# OS
+Thumbs.db

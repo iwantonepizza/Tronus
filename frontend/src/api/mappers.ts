@@ -137,7 +137,7 @@ export function toDomainOutcome(outcome: ApiOutcome): DomainOutcome {
 export function toDomainComment(comment: ApiComment): DomainComment {
   return {
     id: comment.id,
-    author: toDomainUser(comment.author),
+    author: comment.author ? toDomainUser(comment.author) : null,
     body: comment.body,
     createdAt: comment.created_at,
     editedAt: comment.edited_at,

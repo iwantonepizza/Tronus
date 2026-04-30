@@ -165,6 +165,7 @@ export interface ApiOutcome {
   end_reason: EndReason
   mvp: ApiUserSummary | null
   final_note: string
+  fun_facts: ApiFunFact[]
 }
 
 export interface ApiSessionDetail extends ApiSessionListItem {
@@ -296,7 +297,7 @@ export interface FinalizeParticipationPayload {
 
 export interface ApiComment {
   id: number
-  author: PublicUser
+  author: PublicUser | null
   body: string
   created_at: string
   edited_at: string | null
@@ -461,4 +462,29 @@ export interface ApiAvatarAsset {
   generated_image: string
   is_current: boolean
   created_at: string
+}
+
+// ── Notifications ─────────────────────────────────────────────────────────────
+
+export type NotificationKind = 'invite_received' | 'invite_accepted' | 'invite_declined'
+
+export interface ApiNotification {
+  id: number
+  kind: NotificationKind
+  payload: Record<string, unknown>
+  is_read: boolean
+  created_at: string
+}
+
+export interface ApiNotificationList {
+  results: ApiNotification[]
+  unread_count: number
+}
+
+// ── Fun facts ─────────────────────────────────────────────────────────────────
+
+export interface ApiFunFact {
+  icon: string
+  title: string
+  description: string
 }

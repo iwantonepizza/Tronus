@@ -4,6 +4,22 @@
 
 ---
 
+## 2026-04-30 — Wave 7 — Phase 2 завершение (16 задач + production fixes)
+
+- decision: `approved` (12) + `approved_with_pivot` (production fixes — architect добавил host-nginx сценарий)
+- reviewer: architect
+- source: `ai-docs/reviews/2026-04-30-batch-wave7.md`
+- notes: agent `claude-sonnet-4-6` (coder) и `Codex` закрыли всё Phase 2 — UI-модалки (wildlings/clash/event cards/replace/fun facts), notifications, search, русификация, error pages. Параллельно codex обнаружил и устранил 8 критических проблем production-стека. Architect добавил pivot на host-nginx (юзер использует nginx вне контейнеров) и cleanup мусора в repo.
+
+**Phase 2 — CLOSED.**
+
+CR-007 закрыт через T-123 (Wave 6).
+CR-008 закрыт через T-127.
+CR-010 (gitignore cleanup, найден архитектором при review) — опубликован и закрыт в той же итерации.
+CR-009 (real Westeros card slugs) — остаётся blocked, ждёт владельца.
+
+---
+
 ## 2026-04-30 — Wave 6 — Phase 2 ядро (14 задач)
 
 - decision: `approved` (11) и `approved_with_comments` (3: T-100, T-104, T-123)

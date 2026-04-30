@@ -1,52 +1,62 @@
+# Tronus production stack для **сервера с nginx на хосте**.
+#
+# Этот файл — ОСНОВНОЙ для прод-деплоя. Он рассчитан на сценарий, когда
+# у тебя уже работает nginx вне контейнеров и обрабатывает SSL/домен.
+#
+# Что делает:
+# - backend: Django + gunicorn в контейнере, слушает 127.0.0.1:8000
+#   (только loopback хоста, никто извне напрямую достучаться не может).
+# - db: Postgres в контейнере, не публикуется наружу.
+# - НЕТ frontend-контейнера. Фронтенд собирается отдельно (`npm run build`
+#   в `frontend/`), `dist/` отдаётся хостовым nginx как обычная статика.
+#
+# Хост-nginx проксирует:
+#   /api/   → 127.0.0.1:8000  (backend)
+#   /admin/ → 127.0.0.1:8000
+#   /media/ → /var/www/tronus/media   (bind-mount контейнера)
+#   /static/→ /var/www/tronus/static  (bind-mount контейнера)
+#   /       → /var/www/tronus/dist    (frontend dist)
+#
+# Готовый конфиг хост-nginx — в deploy/nginx-host/tronus.conf
+#
+# Альтернатива «всё-в-контейнерах» (без хост-nginx, с собственным внутренним nginx)
+# лежит в docker-compose.bundled.yml — оставлен на случай если ты решишь
+# мигрировать обратно. Для текущей конфигурации не используется.
+
 services:
   db:
     image: postgres:15
     env_file:
-      - ./env/backend.prod.env.example
+      - ./env/backend.prod.env
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
       interval: 10s
       timeout: 5s
       retries: 10
+    restart: unless-stopped
     volumes:
       - postgres_data:/var/lib/postgresql/data
 
   backend:
     build:
       context: ../backend
-      dockerfile: Dockerfile
-    command: >
-      sh -c "python manage.py migrate &&
-             python manage.py collectstatic --noinput &&
-             python manage.py runserver 0.0.0.0:8000"
+      dockerfile: Dockerfile.prod
     env_file:
-      - ./env/backend.prod.env.example
+      - ./env/backend.prod.env
     depends_on:
       db:
         condition: service_healthy
-    expose:
-      - "8000"
-    volumes:
-      - backend_static:/app/staticfiles
-      - backend_media:/app/media
-
-  frontend:
-    build:
-      context: ..
-      dockerfile: frontend/Dockerfile.prod
-      args:
-        VITE_API_BASE_URL: /api/v1
-        VITE_USE_MOCKS: "false"
-        VITE_APP_NAME: Tronus
-    depends_on:
-      - backend
+    # Слушаем только loopback хоста. Никто извне напрямую не достучится —
+    # только через хост-nginx, который проксирует на 127.0.0.1:8000.
     ports:
-      - "8080:80"
+      - "127.0.0.1:8000:8000"
+    restart: unless-stopped
+    # Bind-mount директорий хоста для статики и медиа.
+    # Хост-nginx читает их напрямую, без проксирования через backend.
+    # Эти пути ДОЛЖНЫ существовать на хосте перед запуском (см. deploy/README.md).
     volumes:
-      - backend_static:/var/www/backend/static:ro
-      - backend_media:/var/www/backend/media:ro
+      - ${TRONUS_STATIC_PATH:-/var/www/tronus/static}:/app/staticfiles
+      - ${TRONUS_MEDIA_PATH:-/var/www/tronus/media}:/app/media
 
 volumes:
   postgres_data:
-  backend_static:
-  backend_media:

@@ -15,12 +15,15 @@ import { MatchDetailPage } from '@/pages/MatchDetailPage'
 import { MatchStartPage } from '@/pages/MatchStartPage'
 import { MatchesPage } from '@/pages/MatchesPage'
 import { MyProfilePage } from '@/pages/MyProfilePage'
+import { ForbiddenPage } from '@/pages/ForbiddenPage'
+import { NetworkErrorPage } from '@/pages/NetworkErrorPage'
 import { NotFoundPage } from '@/pages/NotFoundPage'
 import { PasswordResetPage } from '@/pages/PasswordResetPage'
 import { PlayerProfilePage } from '@/pages/PlayerProfilePage'
 import { PlayersPage } from '@/pages/PlayersPage'
 import { RegisterPage } from '@/pages/RegisterPage'
 import { RoundTrackerPage } from '@/pages/RoundTrackerPage'
+import { ServerErrorPage } from '@/pages/ServerErrorPage'
 
 function App() {
   return (
@@ -56,6 +59,9 @@ function App() {
         </Route>
 
         <Route path="/404" element={<NotFoundPage />} />
+        <Route path="/403" element={<ForbiddenPage />} />
+        <Route path="/500" element={<ServerErrorPage />} />
+        <Route path="/network-error" element={<NetworkErrorPage />} />
         <Route path="*" element={<Navigate to="/404" replace />} />
       </Routes>
     </BrowserRouter>

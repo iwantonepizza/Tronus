@@ -677,3 +677,107 @@ def head_to_head_stats(*, user_a_id: int, user_b_id: int) -> dict[str, Any]:
         },
         "matches": matches,
     }
+
+
+def session_fun_facts(session: "GameSession") -> list[dict[str, str]]:  # type: ignore[name-defined]
+    """Compute 3-5 interesting facts about a completed session using its round snapshots.
+
+    Each fact is a dict with keys: icon (lucide name), title, description.
+    Returns empty list if session has no usable snapshots.
+    """
+    from apps.games.models import RoundSnapshot
+
+    snapshots = list(
+        RoundSnapshot.objects.filter(session=session)
+        .order_by("round_number")
+        .exclude(round_number=0)
+    )
+    if not snapshots:
+        return []
+
+    facts: list[dict[str, str]] = []
+
+    # 1. Longest round by wildlings threat delta
+    max_threat_delta = 0
+    for snap in snapshots:
+        idx = snapshots.index(snap)
+        prev_threat = snapshots[idx - 1].wildlings_threat if idx > 0 else 4
+        delta = abs(snap.wildlings_threat - prev_threat)
+        if delta > max_threat_delta:
+            max_threat_delta = delta
+    if max_threat_delta >= 4:
+        facts.append(
+            {
+                "icon": "Swords",
+                "title": "Пик давления одичалых",
+                "description": f"Угроза одичалых скакнула на {max_threat_delta} за один раунд.",
+            }
+        )
+
+    # 2. Most castles at peak
+    peak_castles: dict[str, int] = {}
+    for snap in snapshots:
+        for pid_str, val in snap.castles.items():
+            if val > peak_castles.get(pid_str, 0):
+                peak_castles[pid_str] = val
+
+    if peak_castles:
+        top_pid = max(peak_castles, key=lambda k: peak_castles[k])
+        top_val = peak_castles[top_pid]
+        try:
+            from apps.games.models import Participation
+            p = Participation.objects.select_related("user__profile").get(
+                pk=int(top_pid), session=session
+            )
+            nickname = getattr(getattr(p.user, "profile", None), "nickname", p.user.username)
+            facts.append(
+                {
+                    "icon": "Castle",
+                    "title": "Замковый рекорд",
+                    "description": f"{nickname} в пике держал {top_val} замков.",
+                }
+            )
+        except Exception:
+            pass
+
+    # 3. Total rounds
+    facts.append(
+        {
+            "icon": "TimerReset",
+            "title": "Раундов сыграно",
+            "description": f"Партия продолжалась {len(snapshots)} раундов.",
+        }
+    )
+
+    # 4. Biggest comeback: leader in round 1 vs final winner
+    if len(snapshots) >= 3:
+        first_snap = snapshots[0]
+        last_snap = snapshots[-1]
+        first_castles = first_snap.castles
+        last_castles = last_snap.castles
+        if first_castles and last_castles:
+            round1_leader = max(first_castles, key=lambda k: first_castles[k])
+            final_leader = max(last_castles, key=lambda k: last_castles[k])
+            if round1_leader != final_leader:
+                try:
+                    from apps.games.models import Participation
+                    winner = Participation.objects.select_related("user__profile").get(
+                        pk=int(final_leader), session=session
+                    )
+                    winner_nick = getattr(
+                        getattr(winner.user, "profile", None), "nickname", winner.user.username
+                    )
+                    facts.append(
+                        {
+                            "icon": "TrendingUp",
+                            "title": "Неожиданный победитель",
+                            "description": (
+                                f"{winner_nick} не лидировал в первом раунде, "
+                                "но вырвался вперёд к финалу."
+                            ),
+                        }
+                    )
+                except Exception:
+                    pass
+
+    return facts[:5]
