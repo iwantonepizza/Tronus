@@ -1,0 +1,51 @@
+services:
+  db:
+    image: postgres:15
+    env_file:
+      - ./env/backend.prod.env
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  backend:
+    build:
+      context: ../backend
+      dockerfile: Dockerfile.prod
+    env_file:
+      - ./env/backend.prod.env
+    depends_on:
+      db:
+        condition: service_healthy
+    expose:
+      - "8000"
+    restart: unless-stopped
+    volumes:
+      - backend_static:/app/staticfiles
+      - backend_media:/app/media
+
+  frontend:
+    build:
+      context: ..
+      dockerfile: frontend/Dockerfile.prod
+      args:
+        VITE_API_BASE_URL: /api/v1
+        VITE_USE_MOCKS: "false"
+        VITE_APP_NAME: Tronus
+    depends_on:
+      - backend
+    ports:
+      - "8080:80"
+    restart: unless-stopped
+    volumes:
+      - backend_static:/var/www/backend/static:ro
+      - backend_media:/var/www/backend/media:ro
+
+volumes:
+  postgres_data:
+  backend_static:
+  backend_media:
