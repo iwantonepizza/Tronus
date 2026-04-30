@@ -14,8 +14,8 @@
                  │                                      │
   443/80 ──────▶ │  nginx (хост, systemd)               │
                  │    │                                 │
-                 │    ├─ /api/    → 127.0.0.1:8000  ────│──▶ ┌──────────┐
-                 │    ├─ /admin/  → 127.0.0.1:8000  ────│──▶ │ backend  │ docker
+                 │    ├─ /api/    → 127.0.0.1:8080  ────│──▶ ┌──────────┐
+                 │    ├─ /admin/  → 127.0.0.1:8080  ────│──▶ │ backend  │ docker
                  │    │                                 │    │ gunicorn │
                  │    ├─ /static/ → /var/www/tronus/    │    │  + Django│
                  │    │            static/              │    └────┬─────┘
@@ -35,7 +35,7 @@
 - **Backend** (Django + gunicorn) и **Postgres** — в Docker через `docker-compose.prod.yml`.
 - **Frontend** (`dist/` от Vite) — кладётся на хост в `/var/www/tronus/dist/`. Хост-nginx отдаёт его как статику.
 - **Static / media** Django — bind-mount из контейнера в `/var/www/tronus/{static,media}/` для прямой раздачи nginx (без проксирования через gunicorn).
-- Backend gunicorn слушает **только** `127.0.0.1:8000`, наружу не торчит. Хост-nginx — единственная точка входа.
+- Backend gunicorn слушает **только** `127.0.0.1:8080`, наружу не торчит. Хост-nginx — единственная точка входа.
 
 ---
 
@@ -134,7 +134,7 @@ docker compose -f deploy/docker-compose.prod.yml exec backend \
   python manage.py createsuperuser
 
 # 4. Проверить
-curl -i http://127.0.0.1:8000/api/v1/reference/factions/    # backend напрямую
+curl -i http://127.0.0.1:8080/api/v1/reference/factions/    # backend напрямую
 curl -i http://твой-домен.com/api/v1/reference/factions/    # через хост-nginx
 curl -I http://твой-домен.com/                              # SPA index.html
 ```
@@ -147,7 +147,7 @@ git pull
 
 # Бэкенд
 docker compose -f deploy/docker-compose.prod.yml up -d --build
-# Миграции и collectstatic выполнятся автоматически через entrypoint.prod.sh.
+# Миграции и collectstatic выполнятся автоматически через backend/entrypoint.prod.sh.
 
 # Фронт
 cd frontend
@@ -188,8 +188,6 @@ dcp restart backend
 
 ---
 
-## Troubleshooting
-
 ## Uptime Monitor
 
 Для внешнего uptime-monitor используй:
@@ -213,7 +211,7 @@ Backend контейнер не отвечает.
 ```bash
 docker compose -f deploy/docker-compose.prod.yml ps         # должен быть Up
 docker compose -f deploy/docker-compose.prod.yml logs backend
-curl http://127.0.0.1:8000/api/v1/reference/factions/       # напрямую без nginx
+curl http://127.0.0.1:8080/api/v1/reference/factions/       # напрямую без nginx
 ```
 
 ### `404` на `/static/...` или `/media/...`
