@@ -19,7 +19,6 @@ backend/test_*.sqlite3
 # Node / Vite
 node_modules/
 frontend/dist/
-frontend/src/build/
 frontend/vite-*.log
 frontend/vite-*.err.log
 
