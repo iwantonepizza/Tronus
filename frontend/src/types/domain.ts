@@ -131,6 +131,7 @@ export interface PlannerParticipantSeed {
   id: number
   userId: number
   faction: FactionSlug
+  rsvpStatus?: RsvpStatus
 }
 
 export interface SessionPlannerDraft {

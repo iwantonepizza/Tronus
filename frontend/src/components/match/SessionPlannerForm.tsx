@@ -56,6 +56,16 @@ const entryModes: Array<{
   },
 ]
 
+const RSVP_LABELS: Record<
+  NonNullable<PlannerParticipantSeed['rsvpStatus']>,
+  string
+> = {
+  going: 'Идёт',
+  maybe: 'Под вопросом',
+  declined: 'Не идёт',
+  invited: 'Ждёт ответа',
+}
+
 export function SessionPlannerForm({
   allowEntryModeToggle = true,
   decks,
@@ -128,6 +138,7 @@ export function SessionPlannerForm({
           ) + 1,
         userId,
         faction: nextFaction,
+        rsvpStatus: 'maybe',
       },
     ])
     setPlayerSearch('')
@@ -326,9 +337,15 @@ export function SessionPlannerForm({
             <div className="flex items-center gap-2 text-gold">
               <Users className="h-5 w-5" />
               <h2 className="font-display text-3xl text-text-primary">
-                Пригласить игроков
+                Состав партии
               </h2>
             </div>
+
+            <p className="mt-3 text-sm leading-7 text-text-secondary">
+              Добавленные сюда игроки сразу попадают в состав planned-партии.
+              По умолчанию их статус RSVP — «под вопросом», без второго
+              параллельного списка.
+            </p>
 
             <div className="mt-5">
               <Input
@@ -377,9 +394,14 @@ export function SessionPlannerForm({
                         <p className="font-medium text-text-primary">
                           {player.nickname}
                         </p>
-                        <p className="text-sm text-text-tertiary">
-                          любит: {player.favoriteFaction ?? '—'}
-                        </p>
+                        <div className="flex flex-wrap items-center gap-2 text-sm text-text-tertiary">
+                          <span>любит: {player.favoriteFaction ?? '—'}</span>
+                          {participant.rsvpStatus ? (
+                            <span className="rounded-full border border-amber-400/30 bg-amber-400/10 px-2 py-0.5 text-[11px] uppercase tracking-[0.18em] text-amber-300">
+                              {RSVP_LABELS[participant.rsvpStatus]}
+                            </span>
+                          ) : null}
+                        </div>
                       </div>
                     </div>
                     <Select
@@ -449,7 +471,7 @@ export function SessionPlannerForm({
             </div>
             <p className="mt-4 text-sm leading-7 text-text-secondary">
               {entryMode === 'planned'
-                ? 'После сохранения откроется карточка запланированной партии, где можно будет править состав и следить за обсуждением.'
+                ? 'После сохранения откроется карточка запланированной партии, где состав уже будет виден как единый roster со статусами RSVP.'
                 : 'После сохранения откроется мастер финализации: места, замки, детали игры и подтверждение.'}
             </p>
 

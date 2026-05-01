@@ -1,12 +1,20 @@
 import { ShieldAlert } from 'lucide-react'
 import { Navigate, useNavigate, useParams } from 'react-router-dom'
-import { inviteUser, removeParticipant, updateParticipant } from '@/api/sessions'
 import { SessionPlannerForm } from '@/components/match/SessionPlannerForm'
 import { Button } from '@/components/ui/Button'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { useReferenceData } from '@/hooks/useReferenceData'
-import { useSessionDetail, useUpdateSession } from '@/hooks/useSessions'
+import {
+  useInviteUser,
+  useInvites,
+  useSessionDetail,
+  useUpdateInvite,
+  useUpdateSession,
+  useWithdrawInvite,
+} from '@/hooks/useSessions'
 import { useUsers } from '@/hooks/useUsers'
+import type { FactionSlug } from '@/api/types'
+import type { PlannerParticipantSeed } from '@/types/domain'
 
 const USE_MOCKS = __USE_MOCKS__
 
@@ -21,7 +29,11 @@ export function EditSessionPage() {
   const referenceQuery = useReferenceData()
   const usersQuery = useUsers()
   const sessionQuery = useSessionDetail(sessionId)
+  const invitesQuery = useInvites(sessionId)
   const updateSessionMutation = useUpdateSession(sessionId ?? 0)
+  const inviteUserMutation = useInviteUser(sessionId ?? 0)
+  const updateInviteMutation = useUpdateInvite(sessionId ?? 0)
+  const withdrawInviteMutation = useWithdrawInvite(sessionId ?? 0)
 
   if (sessionId === null) {
     return <Navigate replace to="/404" />
@@ -30,7 +42,8 @@ export function EditSessionPage() {
   if (
     referenceQuery.isLoading ||
     usersQuery.isLoading ||
-    sessionQuery.isLoading
+    sessionQuery.isLoading ||
+    invitesQuery.isLoading
   ) {
     return (
       <main className="space-y-6">
@@ -39,14 +52,19 @@ export function EditSessionPage() {
             Загружаем редактирование…
           </p>
           <p className="mt-3 text-sm leading-7 text-text-secondary">
-            Собираем session detail, игроков и справочники для формы.
+            Собираем session detail, приглашения, игроков и справочники для формы.
           </p>
         </section>
       </main>
     )
   }
 
-  if (referenceQuery.isError || usersQuery.isError || sessionQuery.isError) {
+  if (
+    referenceQuery.isError ||
+    usersQuery.isError ||
+    sessionQuery.isError ||
+    invitesQuery.isError
+  ) {
     return <Navigate replace to="/404" />
   }
 
@@ -56,6 +74,9 @@ export function EditSessionPage() {
 
   const referenceData = referenceQuery.data!
   const match = sessionQuery.data
+  const users = usersQuery.data ?? []
+  const invites = invitesQuery.data ?? []
+  const activeInvites = invites.filter((invite) => invite.rsvp_status !== 'declined')
 
   if (match.status !== 'planned') {
     return (
@@ -72,11 +93,43 @@ export function EditSessionPage() {
     )
   }
 
+  const initialParticipantSeeds: PlannerParticipantSeed[] = []
+  const takenFactions = new Set<string>()
+
+  for (const invite of activeInvites) {
+    const player = users.find((candidate) => candidate.id === invite.user.id)
+    const candidateFactions: FactionSlug[] = [
+      invite.desired_faction,
+      player?.favoriteFaction ?? null,
+      ...referenceData.factions.map((faction) => faction.slug),
+    ].filter(
+      (slug): slug is FactionSlug =>
+        Boolean(slug) &&
+        referenceData.factions.some((faction) => faction.slug === slug),
+    )
+
+    const nextFaction: FactionSlug | undefined =
+      candidateFactions.find((slug) => !takenFactions.has(slug)) ??
+      referenceData.factions[0]?.slug
+
+    if (!nextFaction) {
+      continue
+    }
+
+    takenFactions.add(nextFaction)
+    initialParticipantSeeds.push({
+      id: invite.id,
+      userId: invite.user.id,
+      faction: nextFaction,
+      rsvpStatus: invite.rsvp_status,
+    })
+  }
+
   return (
     <SessionPlannerForm
       allowEntryModeToggle={false}
       decks={referenceData.decks}
-      description="Предзаполненная форма запланированной партии. Здесь можно перенастроить режим, состав и заметки до момента финализации."
+      description="Редактирование planned-партии идёт через единый состав игроков. Каждый игрок здесь уже считается участником с RSVP-статусом."
       eyebrow="Редактирование партии"
       factions={referenceData.factions}
       initialDraft={{
@@ -85,16 +138,17 @@ export function EditSessionPage() {
         modeSlug: match.mode.slug,
         deckSlug: match.deck.slug,
         planningNote: match.planningNote,
-        participantSeeds: match.participations.map((participant) => ({
-          id: participant.id,
-          userId: participant.user.id,
-          faction: participant.faction,
-        })),
+        participantSeeds: initialParticipantSeeds,
       }}
       initialEntryMode="planned"
-      isSubmitting={updateSessionMutation.isPending}
+      isSubmitting={
+        updateSessionMutation.isPending ||
+        inviteUserMutation.isPending ||
+        updateInviteMutation.isPending ||
+        withdrawInviteMutation.isPending
+      }
       modes={referenceData.modes}
-      players={usersQuery.data ?? []}
+      players={users}
       submitError={updateSessionMutation.error?.message ?? null}
       submitLabel="Сохранить изменения"
       title="Редактирование плана"
@@ -121,40 +175,38 @@ export function EditSessionPage() {
           planning_note: draft.planningNote,
         })
 
-        const existingParticipants = new Map(
-          match.participations.map((participant) => [participant.id, participant]),
+        const existingInvites = new Map(
+          activeInvites.map((invite) => [invite.id, invite]),
         )
         const nextSeeds = new Map(
           draft.participantSeeds.map((participant) => [participant.id, participant]),
         )
 
-        for (const existingParticipation of match.participations) {
-          const nextParticipant = nextSeeds.get(existingParticipation.id)
+        for (const existingInvite of activeInvites) {
+          const nextParticipant = nextSeeds.get(existingInvite.id)
 
           if (!nextParticipant) {
-            await removeParticipant(match.id, existingParticipation.id)
+            await withdrawInviteMutation.mutateAsync(existingInvite.id)
             continue
           }
 
-          if (nextParticipant.faction !== existingParticipation.faction) {
-            await updateParticipant(match.id, existingParticipation.id, {
-              faction: nextParticipant.faction,
+          if (nextParticipant.faction !== existingInvite.desired_faction) {
+            await updateInviteMutation.mutateAsync({
+              inviteId: existingInvite.id,
+              payload: { desired_faction: nextParticipant.faction },
             })
           }
         }
 
         for (const participant of draft.participantSeeds) {
-          if (existingParticipants.has(participant.id)) {
+          if (existingInvites.has(participant.id)) {
             continue
           }
 
-          // ADR-0019 / F-230: новые seed'ы из формы редактирования становятся
-          // SessionInvite со статусом 'maybe'. Старый addParticipant flow
-          // создавал Participation на planned-сессии, что ломало start_session.
-          await inviteUser(match.id, {
+          await inviteUserMutation.mutateAsync({
             user_id: participant.userId,
             desired_faction: participant.faction ?? null,
-            rsvp_status: 'maybe',
+            rsvp_status: participant.rsvpStatus ?? 'maybe',
           })
         }
 

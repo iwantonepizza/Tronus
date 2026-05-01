@@ -153,7 +153,7 @@ export function CreateSessionPage() {
           await inviteUser(createdSession.id, {
             user_id: participant.userId,
             desired_faction: participant.faction ?? null,
-            rsvp_status: 'maybe',
+            rsvp_status: participant.rsvpStatus ?? 'maybe',
           })
         }
 
