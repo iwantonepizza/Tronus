@@ -1,6 +1,6 @@
 import { ShieldAlert } from 'lucide-react'
 import { Navigate, useNavigate, useParams } from 'react-router-dom'
-import { addParticipant, removeParticipant, updateParticipant } from '@/api/sessions'
+import { inviteUser, removeParticipant, updateParticipant } from '@/api/sessions'
 import { SessionPlannerForm } from '@/components/match/SessionPlannerForm'
 import { Button } from '@/components/ui/Button'
 import { EmptyState } from '@/components/ui/EmptyState'
@@ -148,9 +148,13 @@ export function EditSessionPage() {
             continue
           }
 
-          await addParticipant(match.id, {
-            user: participant.userId,
-            faction: participant.faction,
+          // ADR-0019 / F-230: новые seed'ы из формы редактирования становятся
+          // SessionInvite со статусом 'maybe'. Старый addParticipant flow
+          // создавал Participation на planned-сессии, что ломало start_session.
+          await inviteUser(match.id, {
+            user_id: participant.userId,
+            desired_faction: participant.faction ?? null,
+            rsvp_status: 'maybe',
           })
         }
 

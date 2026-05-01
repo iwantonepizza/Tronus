@@ -401,7 +401,8 @@ export function useInviteUser(sessionId: number) {
 export function useSelfInvite(sessionId: number) {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: () => selfInvite(sessionId),
+    mutationFn: (payload?: import('@/api/types').SelfInvitePayload) =>
+      selfInvite(sessionId, payload),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['invites', sessionId] }),
   })
 }

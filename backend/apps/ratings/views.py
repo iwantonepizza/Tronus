@@ -12,6 +12,7 @@ from django.http import Http404
 from django.shortcuts import get_object_or_404
 from rest_framework import status
 from rest_framework.exceptions import (
+    MethodNotAllowed,
     NotAuthenticated,
     PermissionDenied,
 )
@@ -86,6 +87,19 @@ class ErrorHandlingMixin:
                 code="not_found",
                 message="Объект не найден.",
                 status_code=status.HTTP_404_NOT_FOUND,
+            )
+
+        # MethodNotAllowed is HTTP 405 — explicit handling so it doesn't fall
+        # through to the catch-all 500. Wave 11 / T-171: prod was returning
+        # 500 for `GET /api/v1/sessions/<id>/votes/` because the catch-all
+        # caught the DRF MethodNotAllowed before status was set.
+        if isinstance(exc, MethodNotAllowed):
+            allow_header = getattr(exc, "available_methods", None) or []
+            return build_error_response(
+                code="method_not_allowed",
+                message=f"Метод '{getattr(exc, 'detail', exc)}' не разрешён для этого ресурса.",
+                status_code=status.HTTP_405_METHOD_NOT_ALLOWED,
+                details={"allowed_methods": list(allow_header)} if allow_header else None,
             )
 
         # Convert opaque 500s into structured ones with a readable code.

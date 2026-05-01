@@ -1,7 +1,7 @@
 import { useMemo } from 'react'
 import { ShieldAlert } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
-import { addParticipant } from '@/api/sessions'
+import { inviteUser } from '@/api/sessions'
 import { SessionPlannerForm } from '@/components/match/SessionPlannerForm'
 import { Button } from '@/components/ui/Button'
 import { EmptyState } from '@/components/ui/EmptyState'
@@ -143,10 +143,17 @@ export function CreateSessionPage() {
           return
         }
 
+        // ADR-0019 / F-230: до start_session ростер ведётся ТОЛЬКО через
+        // SessionInvite. Ранее здесь вызывался addParticipant в цикле, что
+        // создавало Participation на planned-сессии и приводило к 400 на
+        // start_session() и finalize_played_session(). Теперь — инвайт со
+        // статусом `maybe`: создатель собрал состав, но участники должны
+        // подтвердить лично. desired_faction передаём, если выбран в форме.
         for (const participant of draft.participantSeeds) {
-          await addParticipant(createdSession.id, {
-            user: participant.userId,
-            faction: participant.faction,
+          await inviteUser(createdSession.id, {
+            user_id: participant.userId,
+            desired_faction: participant.faction ?? null,
+            rsvp_status: 'maybe',
           })
         }
 

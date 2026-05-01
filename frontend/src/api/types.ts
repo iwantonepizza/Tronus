@@ -87,7 +87,7 @@ export interface LoginPayload {
 }
 
 export interface PasswordResetPayload {
-  login: string
+  email: string
   secret_word: string
   new_password: string
   new_password_repeat: string
@@ -245,6 +245,13 @@ export interface FinalizePlayedSessionPayload {
 
 export interface InviteUserPayload {
   user_id: number
+  desired_faction?: FactionSlug | null
+  rsvp_status?: RsvpStatus
+}
+
+export interface SelfInvitePayload {
+  desired_faction?: FactionSlug | null
+  rsvp_status?: RsvpStatus
 }
 
 export interface UpdateRsvpPayload {

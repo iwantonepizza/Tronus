@@ -148,9 +148,10 @@ export function inviteUser(sessionId: number, payload: InviteUserPayload) {
   })
 }
 
-export function selfInvite(sessionId: number) {
+export function selfInvite(sessionId: number, payload?: import('@/api/types').SelfInvitePayload) {
   return api<ApiSessionInvite>(`/sessions/${sessionId}/invites/me/`, {
     method: 'POST',
+    json: payload ?? {},
   })
 }
 

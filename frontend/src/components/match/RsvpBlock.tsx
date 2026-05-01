@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Check, ChevronDown, Loader2, Minus, UserPlus, X } from 'lucide-react'
+import { Check, ChevronDown, Loader2, Minus, X } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { resolveAssetUrl } from '@/api/client'
 import type { ApiSessionInvite, RsvpStatus } from '@/api/types'
@@ -106,10 +106,14 @@ export function RsvpBlock({
     }
 
     if (!myInvite) {
-      if (!user || status !== 'going') {
+      if (!user) {
         return
       }
 
+      // ADR-0019 / F-231: любой RSVP-статус (going/maybe/declined) теперь
+      // создаёт самоинвайт без предварительного «Я иду». До Wave 11 кнопки
+      // «Под вопросом» / «Не иду» были фактически disabled, пока пользователь
+      // сначала не нажмёт «Я иду» — это бессмысленный обходной клик.
       if (USE_MOCKS) {
         const nextInviteId =
           [...sourceInvites, ...(mockInvites ?? [])].reduce(
@@ -124,7 +128,7 @@ export function RsvpBlock({
             nickname: user.nickname,
             avatar_url: user.current_avatar,
           },
-          rsvp_status: 'going',
+          rsvp_status: status,
           desired_faction: null,
           desired_faction_summary: null,
           invited_by: null,
@@ -133,7 +137,7 @@ export function RsvpBlock({
         return
       }
 
-      await selfInviteMutation.mutateAsync()
+      await selfInviteMutation.mutateAsync({ rsvp_status: status })
       return
     }
 
@@ -333,24 +337,8 @@ export function RsvpBlock({
           to="/login"
           className="inline-flex h-10 items-center justify-center rounded-xl border border-border-subtle px-4 text-sm font-semibold text-text-primary transition hover:border-gold hover:text-gold"
         >
-          Войти
+          Войти, чтобы участвовать
         </Link>
-      ) : null}
-
-      {user && !myInvite && !isReadOnly ? (
-        <button
-          type="button"
-          disabled={selfInviteMutation.isPending}
-          onClick={() => void handleRsvp('going')}
-          className="flex items-center gap-2 rounded-xl border border-dashed border-border-subtle px-4 py-2 text-sm text-text-secondary transition hover:border-text-secondary/40 hover:text-text-primary disabled:opacity-40"
-        >
-          {selfInviteMutation.isPending ? (
-            <Loader2 className="h-4 w-4 animate-spin" />
-          ) : (
-            <UserPlus className="h-4 w-4" />
-          )}
-          Присоединиться
-        </button>
       ) : null}
     </div>
   )
