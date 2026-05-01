@@ -1,4 +1,10 @@
-import type { InputHTMLAttributes, LabelHTMLAttributes, ReactNode } from 'react'
+import {
+  forwardRef,
+  type InputHTMLAttributes,
+  type LabelHTMLAttributes,
+  type ReactNode,
+} from 'react'
+import { Input as BaseInput } from '@/components/ui/Input'
 
 export function Field({ children }: { children: ReactNode }) {
   return <div className="space-y-2">{children}</div>
@@ -13,14 +19,11 @@ export function Label(props: LabelHTMLAttributes<HTMLLabelElement>) {
   )
 }
 
-export function Input(props: InputHTMLAttributes<HTMLInputElement>) {
-  return (
-    <input
-      {...props}
-      className="w-full rounded-2xl border border-border-subtle bg-bg-base px-4 py-3 text-text-primary outline-none transition placeholder:text-text-tertiary focus:border-gold"
-    />
-  )
-}
+export const Input = forwardRef<HTMLInputElement, InputHTMLAttributes<HTMLInputElement>>(
+  function Input(props, ref) {
+    return <BaseInput ref={ref} {...props} />
+  },
+)
 
 export function FieldError({ message }: { message?: string }) {
   if (!message) {

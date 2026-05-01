@@ -595,6 +595,13 @@ function MatchDetailContent({
               </section>
             </aside>
           </div>
+        ) : match.status === 'cancelled' ? (
+          <CommentThread
+            comments={resolvedComments}
+            draft={commentDraft}
+            onDraftChange={setCommentDraft}
+            onPost={() => void handlePostComment()}
+          />
         ) : (
           <div className="space-y-6">
             <section className="rounded-[2rem] border border-border-subtle bg-bg-elev1 p-5 shadow-panel">

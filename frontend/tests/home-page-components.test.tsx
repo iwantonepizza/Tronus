@@ -218,7 +218,9 @@ describe('HomePage overview screen', () => {
     expect(await screen.findByText(/Участники \(1\)/i)).toBeInTheDocument()
     expect(await screen.findByText(/Не пойдут \(1\)/i)).toBeInTheDocument()
     expect(await screen.findByText(/Это вы/i)).toBeInTheDocument()
-    expect(screen.queryByRole('button', { name: /Присоединиться/i })).not.toBeInTheDocument()
+    expect(
+      screen.queryByRole('button', { name: /Присоединиться/i }),
+    ).not.toBeInTheDocument()
   })
 
   it('links the next match hero to the match detail page', async () => {
@@ -258,10 +260,13 @@ describe('HomePage overview screen', () => {
       },
     )
 
-    expect(await screen.findByRole('link', { name: 'Войти' })).toHaveAttribute(
-      'href',
-      '/login',
-    )
-    expect(screen.queryByRole('button', { name: /Присоединиться/i })).not.toBeInTheDocument()
+    expect(
+      await screen.findByRole('link', {
+        name: /Войти, чтобы участвовать/i,
+      }),
+    ).toHaveAttribute('href', '/login')
+    expect(
+      screen.queryByRole('button', { name: /Присоединиться/i }),
+    ).not.toBeInTheDocument()
   })
 })

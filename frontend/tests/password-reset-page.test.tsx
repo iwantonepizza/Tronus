@@ -34,8 +34,8 @@ describe('password reset page', () => {
   it('validates password repeat before submit', async () => {
     renderPage()
 
-    fireEvent.change(screen.getByLabelText('Почта или ник'), {
-      target: { value: 'ironfist' },
+    fireEvent.change(screen.getByLabelText('Почта'), {
+      target: { value: 'ironfist@example.com' },
     })
     fireEvent.change(screen.getByLabelText('Секретное слово'), {
       target: { value: 'lovecraft' },
@@ -51,13 +51,13 @@ describe('password reset page', () => {
     expect(await screen.findByText('Пароли не совпадают.')).toBeInTheDocument()
   })
 
-  it('submits password reset and shows success message', async () => {
+  it('submits password reset with email and shows success message', async () => {
     mockedResetPassword.mockResolvedValue({ status: 'password_reset' })
 
     renderPage()
 
-    fireEvent.change(screen.getByLabelText('Почта или ник'), {
-      target: { value: 'ironfist' },
+    fireEvent.change(screen.getByLabelText('Почта'), {
+      target: { value: 'ironfist@example.com' },
     })
     fireEvent.change(screen.getByLabelText('Секретное слово'), {
       target: { value: 'lovecraft' },
@@ -72,7 +72,7 @@ describe('password reset page', () => {
 
     await waitFor(() => {
       expect(mockedResetPassword).toHaveBeenCalledWith({
-        login: 'ironfist',
+        email: 'ironfist@example.com',
         secret_word: 'lovecraft',
         new_password: 'NewStrongPassword123!',
         new_password_repeat: 'NewStrongPassword123!',
@@ -84,21 +84,21 @@ describe('password reset page', () => {
     ).toBeInTheDocument()
   })
 
-  it('shows backend validation message for invalid login or secret word', async () => {
+  it('shows backend validation message for invalid email or secret word', async () => {
     mockedResetPassword.mockRejectedValue(
       new ApiError({
         code: 'validation_error',
         message: 'Ошибка валидации.',
         status: 400,
         details: {
-          login: ['Неверный логин или секретное слово.'],
+          email: ['Неверная почта или секретное слово.'],
         },
       }),
     )
 
     renderPage()
 
-    fireEvent.change(screen.getByLabelText('Почта или ник'), {
+    fireEvent.change(screen.getByLabelText('Почта'), {
       target: { value: 'missing@example.com' },
     })
     fireEvent.change(screen.getByLabelText('Секретное слово'), {
@@ -113,7 +113,7 @@ describe('password reset page', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Обновить пароль' }))
 
     expect(
-      await screen.findByText('Неверный логин или секретное слово.'),
+      await screen.findByText('Неверная почта или секретное слово.'),
     ).toBeInTheDocument()
   })
 })

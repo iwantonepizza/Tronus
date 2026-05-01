@@ -15,7 +15,7 @@ import {
 
 const passwordResetSchema = z
   .object({
-    login: z.string().trim().min(1, 'Введите email или ник.'),
+    email: z.string().trim().email('Введите корректный email.'),
     secret_word: z.string().trim().min(1, 'Введите секретное слово.'),
     new_password: z.string().min(8, 'Пароль должен быть не короче 8 символов.'),
     new_password_repeat: z.string().min(1, 'Повторите пароль.'),
@@ -46,7 +46,7 @@ function mapValidationErrors(
     const fieldName = issue.path[0]
 
     if (
-      fieldName === 'login' ||
+      fieldName === 'email' ||
       fieldName === 'secret_word' ||
       fieldName === 'new_password' ||
       fieldName === 'new_password_repeat'
@@ -68,7 +68,7 @@ export function PasswordResetPage() {
     formState: { errors, isSubmitting },
   } = useForm<PasswordResetFormValues>({
     defaultValues: {
-      login: '',
+      email: '',
       secret_word: '',
       new_password: '',
       new_password_repeat: '',
@@ -92,7 +92,7 @@ export function PasswordResetPage() {
         if (error.code === 'validation_error' && error.details) {
           for (const [field, messages] of Object.entries(error.details)) {
             if (
-              field === 'login' ||
+              field === 'email' ||
               field === 'secret_word' ||
               field === 'new_password' ||
               field === 'new_password_repeat'
@@ -122,11 +122,11 @@ export function PasswordResetPage() {
             Восстановление пароля
           </h1>
           <p className="mt-4 max-w-xl text-base leading-7 text-text-secondary">
-            Введите email или ник, секретное слово и новый пароль. Слово
-            проверяется без учёта регистра.
+            Введите email, секретное слово и новый пароль. Сброс доступен только
+            для подтверждённой почты аккаунта.
           </p>
           <div className="mt-8 flex flex-wrap gap-3">
-            <Tag>email или ник</Tag>
+            <Tag>email</Tag>
             <Tag>секретное слово</Tag>
             <Tag>повтор пароля</Tag>
             <Tag>ошибки в форме</Tag>
@@ -135,15 +135,15 @@ export function PasswordResetPage() {
         <div className="px-8 py-10 md:px-10">
           <form className="space-y-5" onSubmit={handleSubmit(onSubmit)} noValidate>
             <Field>
-              <Label htmlFor="password-reset-login">Почта или ник</Label>
+              <Label htmlFor="password-reset-email">Почта</Label>
               <Input
-                id="password-reset-login"
-                type="text"
-                placeholder="ваш_ник или you@example.com"
-                aria-invalid={errors.login ? 'true' : 'false'}
-                {...register('login')}
+                id="password-reset-email"
+                type="email"
+                placeholder="you@example.com"
+                aria-invalid={errors.email ? 'true' : 'false'}
+                {...register('email')}
               />
-              <FieldError message={errors.login?.message} />
+              <FieldError message={errors.email?.message} />
             </Field>
 
             <Field>
@@ -151,11 +151,16 @@ export function PasswordResetPage() {
               <Input
                 id="password-reset-secret-word"
                 type="text"
-                placeholder="lovecraft"
+                placeholder=""
                 aria-invalid={errors.secret_word ? 'true' : 'false'}
                 {...register('secret_word')}
               />
               <FieldError message={errors.secret_word?.message} />
+              {!errors.secret_word ? (
+                <p className="text-sm text-text-tertiary">
+                  Секретное слово сообщит администратор.
+                </p>
+              ) : null}
             </Field>
 
             <Field>

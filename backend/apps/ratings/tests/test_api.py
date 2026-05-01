@@ -88,6 +88,34 @@ def test_post_vote_creates_vote_for_participant(
 
 
 @pytest.mark.django_db
+def test_vote_detail_get_returns_method_not_allowed(
+    api_client,
+    make_user,
+    make_completed_session,
+    add_participation,
+) -> None:
+    sender = make_user(email="sender_method_not_allowed@example.com")
+    recipient = make_user(email="recipient_method_not_allowed@example.com")
+    data = make_completed_session(created_by=sender)
+    session = data["session"]
+    add_participation(session=session, user=sender, faction=data["stark"])
+    add_participation(session=session, user=recipient, faction=data["lannister"])
+    vote = MatchVote.objects.create(
+        session=session,
+        from_user=sender,
+        to_user=recipient,
+        vote_type=MatchVote.VoteType.CROWN,
+    )
+    assert api_client.login(username=sender.username, password="StrongPassword123!")
+
+    response = api_client.get(f"/api/v1/sessions/{session.pk}/votes/{vote.pk}/")
+
+    assert response.status_code == 405
+    assert response.json()["error"]["code"] == "method_not_allowed"
+    assert "server_error" not in response.json()["error"]["code"]
+
+
+@pytest.mark.django_db
 def test_post_vote_returns_validation_error_for_non_participant(
     api_client,
     make_user,

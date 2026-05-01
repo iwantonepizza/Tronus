@@ -390,6 +390,20 @@ def test_delete_session_endpoint_also_cancels_session(api_client) -> None:
 
 
 @pytest.mark.django_db
+def test_start_session_get_returns_method_not_allowed(api_client) -> None:
+    _ensure_reference_data()
+    creator = _create_user(email="creator_method_not_allowed@example.com")
+    session = _create_session(created_by=creator)
+    assert api_client.login(username=creator.username, password="StrongPassword123!")
+
+    response = api_client.get(f"/api/v1/sessions/{session.pk}/start/")
+
+    assert response.status_code == 405
+    assert response.json()["error"]["code"] == "method_not_allowed"
+    assert "server_error" not in response.json()["error"]["code"]
+
+
+@pytest.mark.django_db
 def test_add_participant_creates_participation(api_client) -> None:
     _ensure_reference_data()
     creator = _create_user(email="creator@example.com")
