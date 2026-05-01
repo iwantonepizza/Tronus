@@ -8,18 +8,14 @@ asgiref==3.10.0
     # via
     #   django
     #   django-cors-headers
-colorama==0.4.6
-    # via pytest
-django==5.0.2
-    # via -r requirements.in
-gunicorn==22.0.0
-    # via -r requirements.in
-sentry-sdk==2.19.2
-    # via -r requirements.in
-certifi>=2024.8.30
+certifi==2026.4.22
     # via sentry-sdk
-urllib3>=1.26.11
-    # via sentry-sdk
+django==6.0.4
+    # via
+    #   -r requirements.in
+    #   django-cors-headers
+    #   djangorestframework
+    #   sentry-sdk
 django-cors-headers==4.9.0
     # via -r requirements.in
 django-environ==0.12.0
@@ -34,12 +30,15 @@ factory-boy==3.3.3
     #   pytest-factoryboy
 faker==40.15.0
     # via factory-boy
+gunicorn==22.0.0
+    # via -r requirements.in
 inflection==0.5.1
     # via pytest-factoryboy
 iniconfig==2.3.0
     # via pytest
 packaging==26.1
     # via
+    #   gunicorn
     #   pytest
     #   pytest-factoryboy
 pillow==11.3.0
@@ -61,14 +60,13 @@ pytest-django==4.12.0
     # via -r requirements.in
 pytest-factoryboy==2.8.1
     # via -r requirements.in
+sentry-sdk[django]==2.19.2
+    # via -r requirements.in
 sqlparse==0.5.3
     # via django
 typing-extensions==4.15.0
     # via
     #   psycopg
     #   pytest-factoryboy
-tzdata==2026.1
-    # via
-    #   django
-    #   faker
-    #   psycopg
+urllib3==2.6.3
+    # via sentry-sdk
