@@ -38,7 +38,15 @@ class LoginSerializer(serializers.Serializer):
 
 
 class PasswordResetSerializer(serializers.Serializer):
-    login = serializers.CharField(max_length=254)
+    """Wave 11 / T-172: reset accepts ONLY email (no nickname).
+
+    Owner: nicknames are public, secret_word is shared across the closed
+    group, so allowing reset by nickname effectively means anyone in the
+    group could reset anyone else's password. Lock to email — only the
+    actual account owner sees their email.
+    """
+
+    email = serializers.EmailField(max_length=254)
     secret_word = serializers.CharField(trim_whitespace=False)
     new_password = serializers.CharField(write_only=True, trim_whitespace=False)
     new_password_repeat = serializers.CharField(write_only=True, trim_whitespace=False)

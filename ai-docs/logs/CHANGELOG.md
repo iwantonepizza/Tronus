@@ -4,6 +4,30 @@
 
 ## Unreleased
 
+### 2026-05-01 — Architect iteration 11 — Wave 11 hotfix pivot (production blockers)
+
+После Wave 10 на проде вылезли блокеры третьего тестового цикла. Юзер не мог:
+- Создать сессию обычным flow (получалась пустая, потому что `addParticipant` ронялся).
+- Запустить партию (400 на `/start/` из-за orphan Participations, конфликт с unique constraint).
+- Получить 405 на GET `/start/` — был 500 (MethodNotAllowed классифицировался как unhandled).
+- Нажать «Под вопросом» в RSVP без предварительного «Я иду» (UI требовал invite).
+
+**Принят ADR-0019:** при создании сессии создаются `SessionInvite` со статусом `maybe`, не `Participation`. Старый `addParticipant` flow в `CreateSessionPage`/`EditSessionPage` устарел и убирается. `Participation` появляется только в `start_session()`.
+
+**Backend хотфиксы** (architect-applied прямо в коде):
+- `MethodNotAllowed` явно ловится в `ErrorHandlingMixin` и возвращает честный 405 (`code: "method_not_allowed"`) — в `apps/games/views.py` и `apps/ratings/views.py`.
+- `invite_user` и `self_invite` принимают `desired_faction` и `rsvp_status` (default-совместимые).
+- `InviteUserSerializer` расширен; новый `SelfInviteSerializer`.
+- `reset_password` принимает только `email` (не `login`/nickname) — security fix. `PasswordResetSerializer` использует `EmailField`.
+- Новая management команда `cleanup_orphan_participations` для починки прод-данных от Wave 10.
+
+**Wave 11 IN_PROGRESS выдана** — 9 задач:
+- 4 backend (T-170, T-171, T-172, T-173) — agent дописывает тесты на architect-applied код.
+- 5 frontend (F-230, F-231, F-232, F-233, F-213) — главные F-230 + F-231 разблокируют создание сессии и RSVP.
+- 1 carry-over (T-160 force_remove_participation).
+
+**Деплой инструкция в IN_PROGRESS.md** — `cleanup_orphan_participations --dry-run`, потом без флага.
+
 ### 2026-04-30 — Architect iteration 10 — Wave 10 outlined (UI rework + bug spree)
 
 - Получен второй прод-фидбэк после реального теста на `got.craft-hookah.ru` — `ai-docs/source/USER_FEEDBACK_2026-04-30.md` (~20 пунктов).

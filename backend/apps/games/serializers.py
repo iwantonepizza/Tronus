@@ -288,9 +288,50 @@ class SessionInviteSerializer(serializers.ModelSerializer):
 
 
 class InviteUserSerializer(serializers.Serializer):
+    """Payload for POST /sessions/<id>/invites/.
+
+    ADR-0019: ``desired_faction`` and ``rsvp_status`` are now optional —
+    creators set them when seeding from the planning form.
+    """
+
     user_id = serializers.PrimaryKeyRelatedField(
         queryset=User.objects.filter(is_active=True),
         source="invitee",
+    )
+    desired_faction = serializers.SlugRelatedField(
+        slug_field="slug",
+        queryset=Faction.objects.filter(is_active=True),
+        allow_null=True,
+        required=False,
+        default=None,
+    )
+    rsvp_status = serializers.ChoiceField(
+        choices=SessionInvite.RsvpStatus.choices,
+        required=False,
+        default=None,
+        allow_null=True,
+    )
+
+
+class SelfInviteSerializer(serializers.Serializer):
+    """Payload for POST /sessions/<id>/invites/me/.
+
+    ADR-0019: a player can self-invite directly into ``maybe`` or ``declined``,
+    not only ``going``. ``desired_faction`` is also optional.
+    """
+
+    desired_faction = serializers.SlugRelatedField(
+        slug_field="slug",
+        queryset=Faction.objects.filter(is_active=True),
+        allow_null=True,
+        required=False,
+        default=None,
+    )
+    rsvp_status = serializers.ChoiceField(
+        choices=SessionInvite.RsvpStatus.choices,
+        required=False,
+        default=None,
+        allow_null=True,
     )
 
 

@@ -90,15 +90,21 @@ def find_user_by_login(*, login: str) -> User | None:
 @transaction.atomic
 def reset_password(
     *,
-    login: str,
+    email: str,
     secret_word: str,
     new_password: str,
     new_password_repeat: str,
 ) -> User:
+    """ADR-0019 / Wave 11: password reset accepts ONLY email, not nickname.
+
+    Rationale (owner): "по нику легко взломать, секретное слово все знают".
+    Reset by-nickname removed because nicknames are public.
+    """
     invalid_login_or_secret_error = ValidationError(
-        {"login": ["Неверный логин или секретное слово."]}
+        {"email": ["Неверный email или секретное слово."]}
     )
-    user = find_user_by_login(login=login)
+    normalized_email = email.strip()
+    user = selectors.get_user_by_email(email=normalized_email)
 
     if user is None:
         raise invalid_login_or_secret_error

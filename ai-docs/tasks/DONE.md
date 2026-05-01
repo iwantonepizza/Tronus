@@ -4,6 +4,78 @@
 
 ---
 
+## 2026-05-01 — Wave 10 — UI rework + bug spree (17 задач)
+
+Источник фидбэка: `ai-docs/source/USER_FEEDBACK_2026-04-30.md`. Анализ: `USER_FEEDBACK_ANALYSIS_2026-04-30.md`. ADR-0017 (UI invites as canonical roster) принят architect.
+
+### Track A — главный rework (UI roster = invites)
+
+### 2026-05-01 — F-211: RSVP на главной странице + удаление кнопки «Присоединиться»
+- agent: codex — report: `ai-docs/reports/2026-05-01-F-211.md` — **approved**
+
+### 2026-05-01 — F-210: MatchDetailPage rework — единый список «Участники» = инвайты
+- agent: codex — report: `ai-docs/reports/2026-05-01-F-210.md` — **approved**
+
+### 2026-05-01 — T-140: SessionInvite сериализатор + permissions для DELETE invite
+- agent: codex — report: `ai-docs/reports/2026-05-01-T-140.md` — **approved**
+
+### Track B — UI баги/polish
+
+### 2026-05-01 — F-221: мобильные фильтры партий — кнопка «Применить» + закрытие
+- agent: codex — report: `ai-docs/reports/2026-05-01-F-221.md` — **approved**
+
+### 2026-05-01 — F-220: запоминать последний выбор mode/deck в localStorage
+- agent: codex — report: `ai-docs/reports/2026-05-01-F-220.md` — **approved**
+
+### 2026-05-01 — F-219: формат всех дат через Intl с Asia/Yekaterinburg
+- agent: codex — report: `ai-docs/reports/2026-05-01-F-219.md` — **approved**
+
+### 2026-05-01 — F-218: дефолтное scheduled_at = now при создании сессии
+- agent: codex — report: `ai-docs/reports/2026-05-01-F-218.md` — **approved**
+
+### 2026-05-01 — F-217: текст hero-блока на главной
+- agent: codex — report: `ai-docs/reports/2026-05-01-F-217.md` — **approved**
+
+### 2026-05-01 — F-216: кнопки edit/cancel/start видны только creator/admin
+- agent: codex — report: `ai-docs/reports/2026-05-01-F-216.md` — **approved**
+
+### 2026-05-01 — F-215: формат игроков min-max → если min == max, одно число
+- agent: codex — report: `ai-docs/reports/2026-05-01-F-215.md` — **approved**
+
+### 2026-05-01 — F-214: «Колода: <name>» вместо просто «<name>»
+- agent: codex — report: `ai-docs/reports/2026-05-01-F-214.md` — **approved**
+
+### 2026-05-01 — F-212: клик по ближайшей партии на главной → переход на её страницу
+- agent: codex — report: `ai-docs/reports/2026-05-01-F-212.md` — **approved**
+
+### 2026-05-01 — T-151: backend timezone Asia/Yekaterinburg
+- agent: codex — report: `ai-docs/reports/2026-05-01-T-151.md` — **approved**
+
+### 2026-05-01 — T-150: 500 в admin при сохранении GameMode → починен
+- agent: codex — report: `ai-docs/reports/2026-05-01-T-150.md` — **approved**
+
+### Track C — H2H autopick
+
+### 2026-05-01 — F-222: H2H autopick на UI (default = self + suggested)
+- agent: codex — report: `ai-docs/reports/2026-05-01-F-222.md` — **approved**
+
+### 2026-05-01 — T-152: endpoint /api/v1/stats/head-to-head/suggested/?for_user=
+- agent: codex — report: `ai-docs/reports/2026-05-01-T-152.md` — **approved**
+
+### Track D — carry-over
+
+### 2026-05-01 — F-204: индикатор админ-режима в TopBar/Profile
+- agent: codex — report: `ai-docs/reports/2026-05-01-F-204.md` — **approved**
+
+**Не закрыты в Wave 10 — переносятся в Wave 11:**
+- T-160 (force_remove_participation)
+- T-161 (votes lifecycle — blocked, нужен ADR-0018)
+- T-162 (verify pytest), T-163 (тесты finalize_played) — следующая волна
+- F-213 (cancelled UI)
+- T-141 (admin удаляет чужие invites — покрыто T-140 фактически)
+
+---
+
 ## 2026-04-30 — Wave 9 — Hotfix-волна по второму юзер-тесту + admin moderation (7 задач)
 
 Источник: список багов от owner после первого прод-теста на `got.craft-hookah.ru`. Полное описание — `users_task.md` (архивный, теперь в `ai-docs/source/`).

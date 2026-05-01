@@ -8,6 +8,7 @@ from django.http import Http404, QueryDict
 from django.shortcuts import get_object_or_404
 from rest_framework import pagination, status
 from rest_framework.exceptions import (
+    MethodNotAllowed,
     NotAuthenticated,
     PermissionDenied,
 )
@@ -33,6 +34,7 @@ from .serializers import (
     FinalizePlayedSessionSerializer,
     FinalizeSessionSerializer,
     InviteUserSerializer,
+    SelfInviteSerializer,
     MatchTimelineEventSerializer,
     ParticipationSerializer,
     ReplaceParticipantSerializer,
@@ -113,6 +115,18 @@ class ErrorHandlingMixin:
                 code="not_found",
                 message="Объект не найден.",
                 status_code=status.HTTP_404_NOT_FOUND,
+            )
+
+        # MethodNotAllowed is HTTP 405 — explicit handling so it doesn't fall
+        # through to the catch-all 500 (which had been silently classifying
+        # 405-eligible GETs as Internal Server Error in production).
+        if isinstance(exc, MethodNotAllowed):
+            allow_header = getattr(exc, "available_methods", None) or []
+            return build_error_response(
+                code="method_not_allowed",
+                message=f"Метод '{getattr(exc, 'detail', exc)}' не разрешён для этого ресурса.",
+                status_code=status.HTTP_405_METHOD_NOT_ALLOWED,
+                details={"allowed_methods": list(allow_header)} if allow_header else None,
             )
 
         # Any unexpected exception: log it loudly and return a structured 500
@@ -400,6 +414,8 @@ class SessionInvitesView(GamesAPIView):
             session=session,
             inviter=request.user,
             invitee=serializer.validated_data["invitee"],
+            desired_faction=serializer.validated_data.get("desired_faction"),
+            rsvp_status=serializer.validated_data.get("rsvp_status"),
         )
         invite.refresh_from_db()
         return Response(
@@ -415,7 +431,14 @@ class SessionSelfInviteView(GamesAPIView):
 
     def post(self, request, session_id: int, *args, **kwargs) -> Response:
         session = get_object_or_404(selectors.get_session_queryset(), pk=session_id)
-        invite = services.self_invite(session=session, user=request.user)
+        serializer = SelfInviteSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        invite = services.self_invite(
+            session=session,
+            user=request.user,
+            desired_faction=serializer.validated_data.get("desired_faction"),
+            rsvp_status=serializer.validated_data.get("rsvp_status"),
+        )
         invite.refresh_from_db()
         return Response(
             SessionInviteSerializer(invite, context={"request": request}).data,

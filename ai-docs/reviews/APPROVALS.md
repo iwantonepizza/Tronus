@@ -4,6 +4,23 @@
 
 ---
 
+## 2026-05-01 — Wave 10 — UI rework + bug spree (17 задач)
+
+- decision: `approved` для всех 17 (T-140, T-150, T-151, T-152, F-204, F-210..F-222 кроме F-213)
+- reviewer: architect
+- source: `ai-docs/tasks/DONE.md` (Wave 10 раздел)
+- notes: основной rework MatchDetailPage под ADR-0017 завершён успешно. Единый список «Участники = инвайты» работает корректно. H2H autopick подключён. Timezone GMT+5 применён везде. Carry-over: F-213, T-160, T-162, T-163 переносятся в Wave 11.
+
+---
+
+## 2026-05-01 — Архитектурные решения (Wave 11)
+
+- **ADR-0019** (invites at session creation) — accepted by architect after прод-тест.
+- Wave 11 IN_PROGRESS выдана: 9 задач (4 backend architect-applied, 5 для codex).
+- T-171, T-170, T-172, T-173 — backend хотфиксы написаны самим architect; agent дописывает тесты.
+
+---
+
 ## 2026-04-30 — Wave 9 — Hotfix-волна по второму юзер-тесту (7 задач + bugfix)
 
 - decision: `approved` для всех 7 (T-130, T-131, T-132, T-133, T-134, F-202, F-203) + 403/in_progress bugfix

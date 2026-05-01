@@ -693,19 +693,35 @@ def invite_user(
     session: GameSession,
     inviter: User,
     invitee: User,
+    desired_faction: Faction | None = None,
+    rsvp_status: str | None = None,
 ) -> SessionInvite:
-    """Creator invites a specific user. Invite starts as ``invited`` (no response)."""
+    """Creator invites a specific user.
+
+    ADR-0019: ``rsvp_status`` is now configurable. Defaults to ``invited``
+    when not specified. ``desired_faction`` is also stored on the invite for
+    later use as a hint at start_session().
+    """
     locked_session = _get_locked_session(session_id=session.pk)
     _ensure_session_is_planned(session=locked_session)
 
     if SessionInvite.objects.filter(session=locked_session, user=invitee).exists():
         raise ValidationError({"user": ["Этот пользователь уже приглашён в партию."]})
 
+    if rsvp_status is None:
+        rsvp_status = SessionInvite.RsvpStatus.INVITED
+    valid_statuses = {choice for choice, _ in SessionInvite.RsvpStatus.choices}
+    if rsvp_status not in valid_statuses:
+        raise ValidationError(
+            {"rsvp_status": [f"Допустимые значения: {sorted(valid_statuses)}"]}
+        )
+
     invite = SessionInvite.objects.create(
         session=locked_session,
         user=invitee,
         invited_by=inviter,
-        rsvp_status=SessionInvite.RsvpStatus.INVITED,
+        desired_faction=desired_faction,
+        rsvp_status=rsvp_status,
     )
 
     # Notify invitee about new invite. Defensive: never block the invite flow
@@ -732,19 +748,39 @@ def invite_user(
 
 
 @transaction.atomic
-def self_invite(*, session: GameSession, user: User) -> SessionInvite:
-    """Player self-registers as going (no creator action needed)."""
+def self_invite(
+    *,
+    session: GameSession,
+    user: User,
+    desired_faction: Faction | None = None,
+    rsvp_status: str | None = None,
+) -> SessionInvite:
+    """Player self-registers.
+
+    ADR-0019: ``rsvp_status`` is now configurable so a player can set
+    'maybe' or 'declined' on first interaction without going through 'going'
+    first. Default is ``going`` (preserves old behaviour).
+    """
     locked_session = _get_locked_session(session_id=session.pk)
     _ensure_session_is_planned(session=locked_session)
 
     if SessionInvite.objects.filter(session=locked_session, user=user).exists():
         raise ValidationError({"user": ["Вы уже добавлены в эту партию."]})
 
+    if rsvp_status is None:
+        rsvp_status = SessionInvite.RsvpStatus.GOING
+    valid_statuses = {choice for choice, _ in SessionInvite.RsvpStatus.choices}
+    if rsvp_status not in valid_statuses:
+        raise ValidationError(
+            {"rsvp_status": [f"Допустимые значения: {sorted(valid_statuses)}"]}
+        )
+
     return SessionInvite.objects.create(
         session=locked_session,
         user=user,
         invited_by=None,
-        rsvp_status=SessionInvite.RsvpStatus.GOING,
+        desired_faction=desired_faction,
+        rsvp_status=rsvp_status,
     )
 
 
