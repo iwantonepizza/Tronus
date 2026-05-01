@@ -51,6 +51,31 @@ class UserSummarySerializer(serializers.ModelSerializer):
         fields = ("id", "nickname")
 
 
+class InviteUserSummarySerializer(UserSummarySerializer):
+    avatar_url = serializers.SerializerMethodField()
+
+    class Meta(UserSummarySerializer.Meta):
+        fields = UserSummarySerializer.Meta.fields + ("avatar_url",)
+
+    def get_avatar_url(self, obj: User) -> str | None:
+        avatar = getattr(obj.profile, "current_avatar", None)
+        if avatar is None or not avatar.generated_image:
+            return None
+
+        request = self.context.get("request")
+        if request is None:
+            return avatar.generated_image.url
+        return request.build_absolute_uri(avatar.generated_image.url)
+
+
+class InviteFactionSummarySerializer(serializers.ModelSerializer):
+    display_name = serializers.CharField(source="name", read_only=True)
+
+    class Meta:
+        model = Faction
+        fields = ("slug", "display_name", "color")
+
+
 class OutcomeSerializer(serializers.ModelSerializer):
     mvp = UserSummarySerializer(read_only=True)
     fun_facts = serializers.SerializerMethodField()
@@ -236,10 +261,15 @@ class CompleteRoundSerializer(serializers.Serializer):
 
 
 class SessionInviteSerializer(serializers.ModelSerializer):
-    user = UserSummarySerializer(read_only=True)
+    user = InviteUserSummarySerializer(read_only=True)
     desired_faction = serializers.SlugRelatedField(
         read_only=True,
         slug_field="slug",
+        allow_null=True,
+    )
+    desired_faction_summary = InviteFactionSummarySerializer(
+        source="desired_faction",
+        read_only=True,
         allow_null=True,
     )
     invited_by = UserSummarySerializer(read_only=True)
@@ -251,6 +281,7 @@ class SessionInviteSerializer(serializers.ModelSerializer):
             "user",
             "rsvp_status",
             "desired_faction",
+            "desired_faction_summary",
             "invited_by",
             "created_at",
         )

@@ -271,6 +271,7 @@ class MatchTimelineEvent(TimestampedModel):
         WILDLINGS_RAID = "wildlings_raid", "Wildlings raid"
         CLASH_OF_KINGS = "clash_of_kings", "Clash of kings"
         EVENT_CARD_PLAYED = "event_card_played", "Event card played"
+        PARTICIPANT_REMOVED = "participant_removed", "Participant removed"
         PARTICIPANT_REPLACED = "participant_replaced", "Participant replaced"
         SESSION_FINALIZED = "session_finalized", "Session finalized"
 

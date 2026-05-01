@@ -1,4 +1,3 @@
-import { format } from 'date-fns'
 import {
   Castle,
   Crown,
@@ -9,6 +8,7 @@ import {
   Trophy,
 } from 'lucide-react'
 import type { ApiTimelineEvent, TimelineEventKind } from '@/api/types'
+import { formatDateTimeCompact } from '@/lib/dates'
 
 const timelineKindMeta: Record<
   TimelineEventKind,
@@ -36,6 +36,10 @@ const timelineKindMeta: Record<
   event_card_played: {
     icon: ScrollText,
     title: 'Карта Вестероса',
+  },
+  participant_removed: {
+    icon: Shuffle,
+    title: 'Удаление игрока',
   },
   participant_replaced: {
     icon: Shuffle,
@@ -81,6 +85,11 @@ function buildTimelineDescription(event: ApiTimelineEvent) {
       const deckNumber = event.payload?.deck_number
       const cardSlug = event.payload?.card_slug
       return `Колода ${deckNumber ?? '—'}: ${typeof cardSlug === 'string' ? formatEventCardLabel(cardSlug) : '—'}.`
+    }
+    case 'participant_removed': {
+      const roundNumber = event.payload?.round_number
+      const nickname = event.payload?.nickname
+      return `Игрок ${typeof nickname === 'string' ? nickname : '—'} удалён из партии на раунде ${roundNumber ?? '—'}.`
     }
     case 'participant_replaced': {
       const roundNumber = event.payload?.round_number
@@ -175,7 +184,7 @@ export function MatchTimeline({
                       </div>
                     </div>
                     <span className="text-xs text-text-tertiary">
-                      {format(new Date(event.happened_at), 'dd.MM HH:mm')}
+                      {formatDateTimeCompact(event.happened_at)}
                     </span>
                   </div>
                   <p className="mt-3 text-sm leading-7 text-text-secondary">

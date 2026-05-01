@@ -1,7 +1,7 @@
 import { CalendarDays, MessageSquare, Trophy } from 'lucide-react'
-import { format } from 'date-fns'
 import { PlayerPill } from '@/components/player/PlayerPill'
 import { FactionBadge } from '@/components/player/FactionBadge'
+import { formatDateTimeShort } from '@/lib/dates'
 import type { MatchSession } from '@/mocks/types'
 import { cn } from '@/lib/cn'
 import type { DomainSession } from '@/types/domain'
@@ -39,7 +39,7 @@ export function MatchCard({ match }: MatchCardProps) {
         </span>
         <span className="inline-flex items-center gap-2 text-sm text-text-secondary">
           <CalendarDays className="h-4 w-4" />
-          {format(new Date(match.scheduledAt), 'dd.MM.yyyy HH:mm')}
+          {formatDateTimeShort(match.scheduledAt)}
         </span>
       </div>
 
@@ -52,7 +52,7 @@ export function MatchCard({ match }: MatchCardProps) {
           {match.mode.name}
         </span>
         <span className="rounded-full border border-border-subtle bg-bg-base px-3 py-1 text-xs text-text-secondary">
-          {match.deck.name}
+          Колода: {match.deck.name}
         </span>
       </div>
 

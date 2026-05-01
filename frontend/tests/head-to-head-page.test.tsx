@@ -1,13 +1,17 @@
-import { screen } from '@testing-library/react'
+import { screen, waitFor } from '@testing-library/react'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { useHeadToHeadStats } from '@/hooks/useStats'
+import {
+  useHeadToHeadStats,
+  useSuggestedHeadToHeadOpponent,
+} from '@/hooks/useStats'
 import { useUsers } from '@/hooks/useUsers'
 import { HeadToHeadPage } from '@/pages/HeadToHeadPage'
 import { renderWithProviders } from './renderWithProviders'
 
 vi.mock('@/hooks/useStats', () => ({
   useHeadToHeadStats: vi.fn(),
+  useSuggestedHeadToHeadOpponent: vi.fn(),
 }))
 
 vi.mock('@/hooks/useUsers', () => ({
@@ -15,6 +19,9 @@ vi.mock('@/hooks/useUsers', () => ({
 }))
 
 const mockedUseHeadToHeadStats = vi.mocked(useHeadToHeadStats)
+const mockedUseSuggestedHeadToHeadOpponent = vi.mocked(
+  useSuggestedHeadToHeadOpponent,
+)
 const mockedUseUsers = vi.mocked(useUsers)
 
 describe('head-to-head page', () => {
@@ -101,6 +108,12 @@ describe('head-to-head page', () => {
       isLoading: false,
       isError: false,
     } as unknown as ReturnType<typeof useHeadToHeadStats>)
+
+    mockedUseSuggestedHeadToHeadOpponent.mockReturnValue({
+      data: 2,
+      isLoading: false,
+      isError: false,
+    } as unknown as ReturnType<typeof useSuggestedHeadToHeadOpponent>)
   })
 
   it('renders the comparison summary and shared matches', async () => {
@@ -119,11 +132,38 @@ describe('head-to-head page', () => {
     expect(screen.getByText('Партий вместе')).toBeInTheDocument()
     expect(screen.getByText('Общие партии')).toBeInTheDocument()
     expect(screen.getByRole('link', { name: 'Партия #77' })).toBeInTheDocument()
+    expect(screen.getByText(/Колода: Base Deck/i)).toBeInTheDocument()
     expect(screen.getAllByText('IronFist').length).toBeGreaterThan(0)
     expect(screen.getAllByText('SeaWolf').length).toBeGreaterThan(0)
   })
 
-  it('shows empty state before two players are selected', async () => {
+  it('shows empty state before two players are selected for guest', async () => {
+    mockedUseSuggestedHeadToHeadOpponent.mockReturnValue({
+      data: null,
+      isLoading: false,
+      isError: false,
+    } as unknown as ReturnType<typeof useSuggestedHeadToHeadOpponent>)
+
+    renderWithProviders(
+      <MemoryRouter initialEntries={['/h2h']}>
+        <Routes>
+          <Route path="/h2h" element={<HeadToHeadPage />} />
+        </Routes>
+      </MemoryRouter>,
+      {
+        authValue: {
+          user: null,
+          isAuthenticated: false,
+        },
+      },
+    )
+
+    expect(
+      await screen.findByText('Выберите двух разных игроков'),
+    ).toBeInTheDocument()
+  })
+
+  it('auto-fills self as user_a and suggested opponent as user_b on first open', async () => {
     renderWithProviders(
       <MemoryRouter initialEntries={['/h2h']}>
         <Routes>
@@ -132,8 +172,8 @@ describe('head-to-head page', () => {
       </MemoryRouter>,
     )
 
-    expect(
-      await screen.findByText('Выберите двух разных игроков'),
-    ).toBeInTheDocument()
+    await waitFor(() => {
+      expect(mockedUseHeadToHeadStats).toHaveBeenLastCalledWith(1, 2)
+    })
   })
 })

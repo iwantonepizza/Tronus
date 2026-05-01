@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Camera, LogOut, Save, Shield, UserRound } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { ApiError } from '@/api/client'
+import { AdminBadge } from '@/components/ui/AdminBadge'
 import { changePassword } from '@/api/auth'
 import { Button } from '@/components/ui/Button'
 import { EmptyState } from '@/components/ui/EmptyState'
@@ -18,6 +19,7 @@ export function MyProfilePage() {
   const { logout } = useAuth()
   const { data: user, isLoading } = useCurrentUser()
   const referenceQuery = useReferenceData()
+  const isAdmin = Boolean(user?.is_staff || user?.is_superuser)
 
   if (isLoading) {
     return (
@@ -65,9 +67,12 @@ export function MyProfilePage() {
         </p>
         <div className="mt-5 flex flex-col gap-5 md:flex-row md:items-end md:justify-between">
           <div>
-            <h1 className="font-display text-4xl text-text-primary md:text-5xl">
-              {user.nickname}
-            </h1>
+            <div className="flex flex-wrap items-center gap-3">
+              <h1 className="font-display text-4xl text-text-primary md:text-5xl">
+                {user.nickname}
+              </h1>
+              {isAdmin ? <AdminBadge /> : null}
+            </div>
             <p className="mt-4 max-w-2xl text-base leading-7 text-text-secondary">
               Закрытая страница профиля. Здесь можно менять ник, био, любимую
               фракцию и сразу переходить в мастерскую аватаров.
@@ -97,9 +102,12 @@ export function MyProfilePage() {
           <div className="flex items-center gap-4">
             <AvatarPreview nickname={user.nickname} src={user.current_avatar} />
             <div>
-              <p className="font-display text-3xl text-text-primary">
-                {user.nickname}
-              </p>
+              <div className="flex flex-wrap items-center gap-3">
+                <p className="font-display text-3xl text-text-primary">
+                  {user.nickname}
+                </p>
+                {isAdmin ? <AdminBadge /> : null}
+              </div>
               <p className="mt-2 text-sm text-text-secondary">{user.email}</p>
             </div>
           </div>

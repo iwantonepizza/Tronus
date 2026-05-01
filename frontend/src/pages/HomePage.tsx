@@ -1,7 +1,5 @@
-import { useState } from 'react'
 import type { ReactNode } from 'react'
 import { motion } from 'framer-motion'
-import { format } from 'date-fns'
 import {
   ArrowRight,
   CalendarDays,
@@ -15,32 +13,18 @@ import {
   Zap,
 } from 'lucide-react'
 import { Link } from 'react-router-dom'
-import { FactionBadge } from '@/components/player/FactionBadge'
 import { MatchCard } from '@/components/match/MatchCard'
+import { RsvpBlock } from '@/components/match/RsvpBlock'
 import { LeaderboardRow } from '@/components/stats/LeaderboardRow'
 import { StatTile } from '@/components/stats/StatTile'
 import { WinrateBar } from '@/components/stats/WinrateBar'
-import { Button } from '@/components/ui/Button'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { useOverviewStats } from '@/hooks/useStats'
-import { cn } from '@/lib/cn'
+import { formatDateTimeHero, formatWeekday } from '@/lib/dates'
 import type { DomainOverviewStats } from '@/types/domain'
-
-type RsvpState = 'going' | 'maybe' | 'not-going'
-
-const rsvpOptions: Array<{
-  label: string
-  value: RsvpState
-  variant: 'primary' | 'secondary' | 'ghost'
-}> = [
-  { label: 'Я иду', value: 'going', variant: 'primary' },
-  { label: 'Под вопросом', value: 'maybe', variant: 'secondary' },
-  { label: 'Не иду', value: 'not-going', variant: 'ghost' },
-]
 
 export function HomePage() {
   const overviewQuery = useOverviewStats()
-  const [rsvp, setRsvp] = useState<RsvpState>('going')
 
   if (overviewQuery.isLoading || !overviewQuery.data) {
     return (
@@ -81,8 +65,7 @@ export function HomePage() {
               Tronus сегодня
             </h1>
             <p className="mt-4 max-w-2xl text-base leading-8 text-text-secondary sm:text-lg">
-              Главная теперь строится от реальных stats endpoints: ближайшая
-              партия, свежие результаты, текущий лидер и состояние метагейма.
+              Все игры в Игру престолов записываются!
             </p>
           </div>
 
@@ -104,11 +87,7 @@ export function HomePage() {
         </header>
 
         {nextMatch ? (
-          <HeroSection
-            nextMatch={nextMatch}
-            rsvp={rsvp}
-            onRsvpChange={setRsvp}
-          />
+          <HeroSection nextMatch={nextMatch} />
         ) : (
           <section className="rounded-[2rem] border border-border-subtle bg-bg-elev1 p-6 shadow-panel">
             <EmptyState
@@ -277,13 +256,12 @@ function getFunFactIcon(icon: string) {
 
 function HeroSection({
   nextMatch,
-  onRsvpChange,
-  rsvp,
 }: {
   nextMatch: NonNullable<DomainOverviewStats['nextMatch']>
-  onRsvpChange: (value: RsvpState) => void
-  rsvp: RsvpState
 }) {
+  const supportsInvites =
+    nextMatch.status === 'planned' || nextMatch.status === 'cancelled'
+
   return (
     <motion.section
       initial={{ opacity: 0, scale: 0.96, y: 18 }}
@@ -291,32 +269,36 @@ function HeroSection({
       transition={{ duration: 0.32, ease: 'easeOut' }}
       className="grid gap-6 rounded-[2rem] border border-gold/20 bg-[linear-gradient(135deg,_rgba(23,23,31,0.98),_rgba(31,31,42,0.92))] p-6 shadow-panel lg:grid-cols-[1.2fr_0.8fr]"
     >
-      <div>
+      <Link
+        to={`/matches/${nextMatch.id}`}
+        className="group block rounded-[1.75rem] transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold/60 focus-visible:ring-offset-2 focus-visible:ring-offset-bg-elev1"
+        aria-label={`Открыть ближайшую партию #${nextMatch.id}`}
+      >
         <div className="flex flex-wrap items-center gap-3">
           <span className="rounded-full bg-gold/12 px-3 py-1 font-mono text-[11px] uppercase tracking-[0.22em] text-gold">
             Ближайшая партия
           </span>
-          <span className="rounded-full border border-border-subtle bg-bg-base px-3 py-1 text-xs text-text-secondary">
+          <span className="rounded-full border border-border-subtle bg-bg-base px-3 py-1 text-xs text-text-secondary transition group-hover:border-gold/30 group-hover:text-text-primary">
             Партия #{nextMatch.id}
           </span>
         </div>
 
-        <h2 className="mt-5 max-w-3xl text-balance font-display text-4xl text-text-primary sm:text-5xl">
-          {format(new Date(nextMatch.scheduledAt), 'dd MMMM, HH:mm')}
+        <h2 className="mt-5 max-w-3xl text-balance font-display text-4xl text-text-primary transition group-hover:text-gold sm:text-5xl">
+          {formatDateTimeHero(nextMatch.scheduledAt)}
         </h2>
 
         <div className="mt-4 flex flex-wrap gap-3 text-sm text-text-secondary">
           <HeroMeta
             icon={<CalendarDays className="h-4 w-4" />}
-            label={format(new Date(nextMatch.scheduledAt), 'EEEE')}
+            label={formatWeekday(nextMatch.scheduledAt)}
           />
           <HeroMeta
             icon={<Clock3 className="h-4 w-4" />}
-            label={`${nextMatch.mode.name} • ${nextMatch.deck.name}`}
+            label={`${nextMatch.mode.name} • Колода: ${nextMatch.deck.name}`}
           />
           <HeroMeta
             icon={<Users className="h-4 w-4" />}
-            label={`${nextMatch.participations.length} подтверждено`}
+            label={`Ведущий: ${nextMatch.createdBy.nickname}`}
           />
         </div>
 
@@ -324,67 +306,36 @@ function HeroSection({
           {nextMatch.planningNote}
         </p>
 
-        <div className="mt-6 flex flex-wrap gap-3">
-          {rsvpOptions.map((option) => (
-            <Button
-              key={option.value}
-              aria-label={`Ответ на приглашение: ${option.label}`}
-              aria-pressed={rsvp === option.value}
-              className={cn(
-                'min-w-[148px]',
-                rsvp === option.value &&
-                  option.variant !== 'primary' &&
-                  'border-gold text-gold',
-              )}
-              variant={option.variant}
-              onClick={() => onRsvpChange(option.value)}
-            >
-              {option.label}
-            </Button>
-          ))}
-        </div>
-      </div>
+        <span className="mt-6 inline-flex items-center gap-2 text-sm font-semibold text-gold transition group-hover:text-gold-hover">
+          Открыть карточку партии
+          <ArrowRight className="h-4 w-4" />
+        </span>
+      </Link>
 
       <div className="space-y-4">
         <div className="rounded-[1.75rem] border border-border-subtle bg-bg-base/70 p-5">
           <div className="flex items-center justify-between gap-3">
             <h3 className="font-display text-2xl text-text-primary">
-              Подтверждённый состав
+              Участники и RSVP
             </h3>
             <span className="text-xs uppercase tracking-[0.2em] text-text-tertiary">
               Ведущий {nextMatch.createdBy.nickname}
             </span>
           </div>
-          <div className="mt-5 flex flex-wrap gap-3">
-            {nextMatch.participations.map((participation, index) => (
-              <motion.div
-                key={participation.id}
-                initial={{ opacity: 0, y: 12 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.04 * index, duration: 0.24 }}
-                whileHover={{ y: -3 }}
-                title={participation.user.nickname}
-              >
-                <div className="rounded-[1.5rem] border border-border-subtle bg-bg-elev1 px-3 py-3">
-                  <div className="flex items-center gap-3">
-                    <span className="inline-flex h-12 w-12 items-center justify-center rounded-full border border-border-subtle bg-bg-base font-semibold text-gold">
-                      {participation.user.nickname.slice(0, 2).toUpperCase()}
-                    </span>
-                    <div>
-                      <p className="font-medium text-text-primary">
-                        {participation.user.nickname}
-                      </p>
-                      <div className="mt-1">
-                        <FactionBadge
-                          factionSlug={participation.faction}
-                          size="sm"
-                        />
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </motion.div>
-            ))}
+          <div className="mt-5">
+            {supportsInvites ? (
+              <RsvpBlock
+                sessionCreatorId={nextMatch.createdBy.id}
+                sessionId={nextMatch.id}
+                sessionStatus={
+                  nextMatch.status === 'cancelled' ? 'cancelled' : 'planned'
+                }
+              />
+            ) : (
+              <div className="rounded-[1.5rem] border border-dashed border-border-subtle bg-bg-elev1 px-4 py-5 text-sm text-text-secondary">
+                Состав партии для этого статуса отображается на странице партии.
+              </div>
+            )}
           </div>
         </div>
 
@@ -395,7 +346,16 @@ function HeroSection({
           <dl className="mt-4 grid gap-4 sm:grid-cols-3 lg:grid-cols-1 xl:grid-cols-3">
             <SummaryStat label="Режим" value={nextMatch.mode.name} />
             <SummaryStat label="Колода" value={nextMatch.deck.name} />
-            <SummaryStat label="Статус" value="запланирована" />
+            <SummaryStat
+              label="Статус"
+              value={
+                nextMatch.status === 'planned'
+                  ? 'запланирована'
+                  : nextMatch.status === 'cancelled'
+                    ? 'отменена'
+                    : nextMatch.status
+              }
+            />
           </dl>
         </div>
       </div>

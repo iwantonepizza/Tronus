@@ -12,7 +12,7 @@ import type {
   PlayerStats,
   PublicUser,
 } from '@/mocks/types'
-import type { ApiTimelineEvent } from '@/api/types'
+import type { ApiSessionInvite, ApiTimelineEvent } from '@/api/types'
 
 export const mockFactions: Faction[] = [
   {
@@ -203,6 +203,42 @@ export function factionBySlug(slug: FactionSlug) {
   return (
     mockFactions.find((faction) => faction.slug === slug) ?? mockFactions[0]
   )
+}
+
+const mockInviteStatusOverrides: Record<
+  number,
+  Record<number, ApiSessionInvite['rsvp_status']>
+> = {
+  201: {
+    1: 'going',
+    2: 'maybe',
+    3: 'going',
+    6: 'invited',
+    8: 'declined',
+  },
+  202: {
+    3: 'going',
+    4: 'going',
+    5: 'maybe',
+    7: 'invited',
+  },
+  203: {
+    2: 'going',
+    5: 'maybe',
+    6: 'going',
+    8: 'declined',
+  },
+  204: {
+    2: 'going',
+    3: 'declined',
+    5: 'maybe',
+  },
+  205: {
+    1: 'going',
+    4: 'declined',
+    6: 'going',
+    7: 'invited',
+  },
 }
 
 function buildParticipation(
@@ -777,6 +813,41 @@ const matchSeeds: Array<Parameters<typeof buildMatch>[0]> = [
 ]
 
 export const mockMatches: MatchSession[] = matchSeeds.map(buildMatch)
+
+export function getMockInvitesForMatch(sessionId: number): ApiSessionInvite[] {
+  const match = mockMatches.find((item) => item.id === sessionId)
+
+  if (!match) {
+    return []
+  }
+
+  const statusOverrides = mockInviteStatusOverrides[sessionId] ?? {}
+
+  return match.participations.map((participation, index) => {
+    const desiredFaction = factionBySlug(participation.faction)
+
+    return {
+      id: sessionId * 100 + participation.user.id,
+      user: {
+        id: participation.user.id,
+        nickname: participation.user.nickname,
+        avatar_url: participation.user.currentAvatarUrl,
+      },
+      rsvp_status: statusOverrides[participation.user.id] ?? 'going',
+      desired_faction: desiredFaction.slug,
+      desired_faction_summary: {
+        slug: desiredFaction.slug,
+        display_name: desiredFaction.name,
+        color: desiredFaction.color,
+      },
+      invited_by: {
+        id: match.createdBy.id,
+        nickname: match.createdBy.nickname,
+      },
+      created_at: new Date(Date.UTC(2026, 3, 10 + index, 15, 0)).toISOString(),
+    }
+  })
+}
 
 export const mockCommentsByMatch: Record<number, MatchComment[]> = {
   206: [

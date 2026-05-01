@@ -5,6 +5,7 @@ import {
   useFactionStats,
   useFactionStatsList,
   useHeadToHeadStats,
+  useSuggestedHeadToHeadOpponent,
   useLeaderboardStats,
   usePlayerStats,
 } from '@/hooks/useStats'
@@ -22,6 +23,7 @@ vi.mock('@/hooks/useStats', () => ({
   useFactionStatsList: vi.fn(),
   useFactionStats: vi.fn(),
   useHeadToHeadStats: vi.fn(),
+  useSuggestedHeadToHeadOpponent: vi.fn(),
 }))
 
 vi.mock('@/hooks/useUsers', () => ({
@@ -33,6 +35,9 @@ const mockedUseLeaderboardStats = vi.mocked(useLeaderboardStats)
 const mockedUseFactionStatsList = vi.mocked(useFactionStatsList)
 const mockedUseFactionStats = vi.mocked(useFactionStats)
 const mockedUseHeadToHeadStats = vi.mocked(useHeadToHeadStats)
+const mockedUseSuggestedHeadToHeadOpponent = vi.mocked(
+  useSuggestedHeadToHeadOpponent,
+)
 const mockedUseUsers = vi.mocked(useUsers)
 
 describe('stats pages', () => {
@@ -213,6 +218,12 @@ describe('stats pages', () => {
       isLoading: false,
       isError: false,
     } as unknown as ReturnType<typeof useHeadToHeadStats>)
+
+    mockedUseSuggestedHeadToHeadOpponent.mockReturnValue({
+      data: 2,
+      isLoading: false,
+      isError: false,
+    } as unknown as ReturnType<typeof useSuggestedHeadToHeadOpponent>)
   })
 
   it('renders player profile from stats hook data', async () => {

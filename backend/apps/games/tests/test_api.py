@@ -7,7 +7,14 @@ from django.contrib.auth.models import Group
 from django.utils import timezone
 
 from apps.accounts.models import User
-from apps.games.models import GameSession, Outcome, Participation, RoundSnapshot
+from apps.games.models import (
+    GameSession,
+    MatchTimelineEvent,
+    Outcome,
+    Participation,
+    RoundSnapshot,
+    SessionInvite,
+)
 from apps.reference.models import Faction, GameMode, HouseDeck
 
 
@@ -511,6 +518,92 @@ def test_delete_participant_removes_participation(api_client) -> None:
 
 
 @pytest.mark.django_db
+def test_force_delete_participant_allows_creator_after_start(api_client) -> None:
+    reference = _ensure_reference_data()
+    creator = _create_user(email="creator_force_api@example.com")
+    player_one = _create_user(email="player1_force_api@example.com")
+    player_two = _create_user(email="player2_force_api@example.com")
+    _grant_player_role(user=creator)
+    session = _create_session(created_by=creator, status=GameSession.Status.IN_PROGRESS)
+    participation = _create_participation(
+        session=session,
+        user=player_one,
+        faction=reference["lannister"],
+    )
+    _create_participation(
+        session=session,
+        user=creator,
+        faction=reference["stark"],
+    )
+    _create_participation(
+        session=session,
+        user=player_two,
+        faction=reference["baratheon"],
+    )
+    assert api_client.login(username=creator.username, password="StrongPassword123!")
+
+    response = api_client.delete(
+        f"/api/v1/sessions/{session.pk}/participants/{participation.pk}/?force=true"
+    )
+
+    assert response.status_code == 204
+    assert Participation.objects.filter(pk=participation.pk).exists() is False
+    timeline_event = MatchTimelineEvent.objects.get(
+        session=session,
+        kind=MatchTimelineEvent.Kind.PARTICIPANT_REMOVED,
+    )
+    assert timeline_event.payload["user_id"] == player_one.pk
+
+
+@pytest.mark.django_db
+def test_force_delete_participant_allows_admin_after_start(api_client) -> None:
+    reference = _ensure_reference_data()
+    creator = _create_user(email="creator_force_admin@example.com")
+    admin = _create_user(email="admin_force_api@example.com", is_staff=True)
+    player_one = _create_user(email="player1_force_admin@example.com")
+    _grant_player_role(user=creator)
+    session = _create_session(created_by=creator, status=GameSession.Status.IN_PROGRESS)
+    participation = _create_participation(
+        session=session,
+        user=player_one,
+        faction=reference["lannister"],
+    )
+    assert api_client.login(username=admin.username, password="StrongPassword123!")
+
+    response = api_client.delete(
+        f"/api/v1/sessions/{session.pk}/participants/{participation.pk}/?force=true"
+    )
+
+    assert response.status_code == 204
+    assert Participation.objects.filter(pk=participation.pk).exists() is False
+
+
+@pytest.mark.django_db
+def test_force_delete_participant_forbids_unrelated_user(api_client) -> None:
+    reference = _ensure_reference_data()
+    creator = _create_user(email="creator_force_forbid@example.com")
+    stranger = _create_user(email="stranger_force_forbid@example.com")
+    player_one = _create_user(email="player1_force_forbid@example.com")
+    _grant_player_role(user=creator)
+    _grant_player_role(user=stranger)
+    session = _create_session(created_by=creator, status=GameSession.Status.IN_PROGRESS)
+    participation = _create_participation(
+        session=session,
+        user=player_one,
+        faction=reference["lannister"],
+    )
+    assert api_client.login(username=stranger.username, password="StrongPassword123!")
+
+    response = api_client.delete(
+        f"/api/v1/sessions/{session.pk}/participants/{participation.pk}/?force=true"
+    )
+
+    assert response.status_code == 403
+    assert response.json()["error"]["code"] == "permission_denied"
+    assert Participation.objects.filter(pk=participation.pk).exists() is True
+
+
+@pytest.mark.django_db
 def test_finalize_session_creates_outcome(api_client) -> None:
     reference = _ensure_reference_data()
     creator = _create_user(email="creator@example.com")
@@ -600,3 +693,103 @@ def test_finalize_session_returns_validation_error_shape(api_client) -> None:
     assert response.status_code == 400
     assert response.json()["error"]["code"] == "validation_error"
     assert "session" in response.json()["error"]["details"]
+
+
+@pytest.mark.django_db
+def test_session_invites_list_returns_nested_user_and_faction_summary(api_client) -> None:
+    reference = _ensure_reference_data()
+    creator = _create_user(email="creator@example.com")
+    invited = _create_user(email="invited@example.com")
+    _grant_player_role(user=creator)
+    session = _create_session(created_by=creator)
+    SessionInvite.objects.create(
+        session=session,
+        user=invited,
+        invited_by=creator,
+        rsvp_status=SessionInvite.RsvpStatus.MAYBE,
+        desired_faction=reference["stark"],
+    )
+
+    response = api_client.get(f"/api/v1/sessions/{session.pk}/invites/")
+
+    assert response.status_code == 200
+    assert response.json()[0]["user"] == {
+        "id": invited.pk,
+        "nickname": invited.profile.nickname,
+        "avatar_url": None,
+    }
+    assert response.json()[0]["desired_faction"] == "stark"
+    assert response.json()[0]["desired_faction_summary"] == {
+        "slug": "stark",
+        "display_name": reference["stark"].name,
+        "color": "#6B7B8C",
+    }
+
+
+@pytest.mark.django_db
+def test_delete_invite_allows_invite_owner(api_client) -> None:
+    _ensure_reference_data()
+    creator = _create_user(email="creator@example.com")
+    invited = _create_user(email="invited@example.com")
+    _grant_player_role(user=creator)
+    _grant_player_role(user=invited)
+    session = _create_session(created_by=creator)
+    invite = SessionInvite.objects.create(session=session, user=invited, invited_by=creator)
+    assert api_client.login(username=invited.username, password="StrongPassword123!")
+
+    response = api_client.delete(f"/api/v1/sessions/{session.pk}/invites/{invite.pk}/")
+
+    assert response.status_code == 204
+    assert SessionInvite.objects.filter(pk=invite.pk).exists() is False
+
+
+@pytest.mark.django_db
+def test_delete_invite_allows_session_creator_for_foreign_invite(api_client) -> None:
+    _ensure_reference_data()
+    creator = _create_user(email="creator@example.com")
+    invited = _create_user(email="invited@example.com")
+    _grant_player_role(user=creator)
+    session = _create_session(created_by=creator)
+    invite = SessionInvite.objects.create(session=session, user=invited, invited_by=creator)
+    assert api_client.login(username=creator.username, password="StrongPassword123!")
+
+    response = api_client.delete(f"/api/v1/sessions/{session.pk}/invites/{invite.pk}/")
+
+    assert response.status_code == 204
+    assert SessionInvite.objects.filter(pk=invite.pk).exists() is False
+
+
+@pytest.mark.django_db
+def test_delete_invite_allows_admin_for_foreign_invite(api_client) -> None:
+    _ensure_reference_data()
+    creator = _create_user(email="creator@example.com")
+    invited = _create_user(email="invited@example.com")
+    admin = _create_user(email="admin@example.com", is_staff=True)
+    _grant_player_role(user=creator)
+    session = _create_session(created_by=creator)
+    invite = SessionInvite.objects.create(session=session, user=invited, invited_by=creator)
+    assert api_client.login(username=admin.username, password="StrongPassword123!")
+
+    response = api_client.delete(f"/api/v1/sessions/{session.pk}/invites/{invite.pk}/")
+
+    assert response.status_code == 204
+    assert SessionInvite.objects.filter(pk=invite.pk).exists() is False
+
+
+@pytest.mark.django_db
+def test_delete_invite_forbids_unrelated_user(api_client) -> None:
+    _ensure_reference_data()
+    creator = _create_user(email="creator@example.com")
+    invited = _create_user(email="invited@example.com")
+    stranger = _create_user(email="stranger@example.com")
+    _grant_player_role(user=creator)
+    _grant_player_role(user=stranger)
+    session = _create_session(created_by=creator)
+    invite = SessionInvite.objects.create(session=session, user=invited, invited_by=creator)
+    assert api_client.login(username=stranger.username, password="StrongPassword123!")
+
+    response = api_client.delete(f"/api/v1/sessions/{session.pk}/invites/{invite.pk}/")
+
+    assert response.status_code == 403
+    assert response.json()["error"]["code"] == "permission_denied"
+    assert SessionInvite.objects.filter(pk=invite.pk).exists() is True

@@ -171,6 +171,63 @@ def remove_participant(*, participation: Participation) -> None:
 
 
 @transaction.atomic
+def force_remove_participation(
+    *,
+    participation: Participation,
+    by_user: User,
+) -> None:
+    locked_participation = (
+        Participation.objects.select_for_update()
+        .select_related("session__mode", "user__profile", "faction")
+        .get(pk=participation.pk)
+    )
+    locked_session = locked_participation.session
+    _ensure_session_is_in_progress(session=locked_session)
+
+    if not (
+        locked_session.created_by_id == by_user.pk
+        or by_user.is_staff
+        or by_user.is_superuser
+    ):
+        raise ValidationError(
+            {"permission": ["Только создатель партии или администратор может удалить участника после старта."]}
+        )
+
+    current_round = (
+        RoundSnapshot.objects.filter(session=locked_session)
+        .order_by("-round_number")
+        .values_list("round_number", flat=True)
+        .first()
+        or 0
+    )
+    payload = {
+        "participation_id": locked_participation.pk,
+        "user_id": locked_participation.user_id,
+        "nickname": locked_participation.user.profile.nickname,
+        "faction_slug": locked_participation.faction.slug,
+        "round_number": current_round,
+        "removed_by_user_id": by_user.pk,
+    }
+
+    event = MatchTimelineEvent.objects.create(
+        session=locked_session,
+        actor=by_user,
+        kind=MatchTimelineEvent.Kind.PARTICIPANT_REMOVED,
+        payload=payload,
+    )
+    MatchComment.objects.create(
+        session=locked_session,
+        author=None,
+        body=(
+            f"Летописец: игрок {locked_participation.user.profile.nickname} "
+            f"удалён из партии на раунде {current_round}."
+        ),
+        chronicler_event=event,
+    )
+    locked_participation.delete()
+
+
+@transaction.atomic
 def update_participant(
     *,
     participation: Participation,

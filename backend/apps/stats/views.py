@@ -18,11 +18,14 @@ from .selectors import (
     list_faction_stats,
     overview_stats,
     player_profile_stats,
+    suggest_h2h_opponent,
 )
 from .serializers import (
     FactionStatsSerializer,
     HeadToHeadQuerySerializer,
     HeadToHeadStatsSerializer,
+    HeadToHeadSuggestedQuerySerializer,
+    HeadToHeadSuggestedSerializer,
     LeaderboardQuerySerializer,
     LeaderboardStatsSerializer,
     OverviewStatsSerializer,
@@ -128,3 +131,15 @@ class HeadToHeadStatsView(StatsAPIView):
             user_b_id=query_serializer.validated_data["user_b"],
         )
         return Response(HeadToHeadStatsSerializer(stats, context={"request": request}).data)
+
+
+class HeadToHeadSuggestedView(StatsAPIView):
+    def get(self, request, *args, **kwargs) -> Response:
+        query_serializer = HeadToHeadSuggestedQuerySerializer(data=request.query_params)
+        query_serializer.is_valid(raise_exception=True)
+
+        suggested_user_id = suggest_h2h_opponent(
+            for_user_id=query_serializer.validated_data["for_user"]
+        )
+        payload = {"interesting_opponent_id": suggested_user_id}
+        return Response(HeadToHeadSuggestedSerializer(payload).data)

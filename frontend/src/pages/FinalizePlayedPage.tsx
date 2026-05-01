@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useState } from 'react'
 import {
   AlertTriangle,
   Castle,
@@ -73,14 +73,6 @@ export function FinalizePlayedPage() {
   const [submitError, setSubmitError] = useState<string | null>(null)
   const [confirmed, setConfirmed] = useState(false)
   const [showCelebration, setShowCelebration] = useState(false)
-
-  // Set the winner's castles to 7 by default whenever end_reason === 'castles_7'
-  useEffect(() => {
-    if (endReason !== 'castles_7') return
-    setRows((prev) =>
-      prev.map((row) => (row.place === 1 ? { ...row, castles: 7 } : row)),
-    )
-  }, [endReason])
 
   if (sessionId === null) return <Navigate replace to="/404" />
 
@@ -392,7 +384,16 @@ export function FinalizePlayedPage() {
                 <button
                   key={opt.value}
                   type="button"
-                  onClick={() => setEndReason(opt.value)}
+                  onClick={() => {
+                    setEndReason(opt.value)
+                    if (opt.value === 'castles_7') {
+                      setRows((prev) =>
+                        prev.map((row) =>
+                          row.place === 1 ? { ...row, castles: 7 } : row,
+                        ),
+                      )
+                    }
+                  }}
                   className={`rounded-xl px-3 py-1.5 text-sm border transition-all ${
                     endReason === opt.value
                       ? 'border-text-primary/40 bg-bg-elev2 text-text-primary'

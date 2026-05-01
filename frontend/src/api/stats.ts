@@ -1,6 +1,7 @@
 import { api } from '@/api/client'
 import type {
   ApiFactionStats,
+  ApiHeadToHeadSuggested,
   ApiHeadToHeadStats,
   ApiLeaderboardStats,
   ApiOverviewStats,
@@ -51,4 +52,14 @@ export function getHeadToHeadStats(params: { userA: number; userB: number }) {
   })
 
   return api<ApiHeadToHeadStats>(`/stats/head-to-head/?${query.toString()}`)
+}
+
+export function getSuggestedHeadToHeadOpponent(forUser: number) {
+  const query = new URLSearchParams({
+    for_user: String(forUser),
+  })
+
+  return api<ApiHeadToHeadSuggested>(
+    `/stats/head-to-head/suggested/?${query.toString()}`,
+  )
 }

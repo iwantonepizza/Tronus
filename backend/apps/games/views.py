@@ -20,7 +20,11 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from . import selectors, services
-from .permissions import IsPlayerUser, IsSessionCreatorOrAdmin
+from .permissions import (
+    IsInviteOwnerOrSessionCreatorOrAdmin,
+    IsPlayerUser,
+    IsSessionCreatorOrAdmin,
+)
 from .serializers import (
     AddParticipantSerializer,
     ClashOfKingsSerializer,
@@ -299,7 +303,14 @@ class SessionParticipantDetailView(GamesAPIView):
             pk=participation_id,
         )
         self.check_object_permissions(request, participation)
-        services.remove_participant(participation=participation)
+        force_remove = request.query_params.get("force") == "true"
+        if force_remove:
+            services.force_remove_participation(
+                participation=participation,
+                by_user=request.user,
+            )
+        else:
+            services.remove_participant(participation=participation)
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
@@ -368,9 +379,17 @@ class SessionInvitesView(GamesAPIView):
 
         session = get_object_or_404(selectors.get_session_queryset(), pk=session_id)
         invites = SessionInvite.objects.filter(session=session).select_related(
-            "user__profile", "invited_by__profile", "desired_faction"
+            "user__profile__current_avatar",
+            "invited_by__profile",
+            "desired_faction",
         ).order_by("created_at")
-        return Response(SessionInviteSerializer(invites, many=True).data)
+        return Response(
+            SessionInviteSerializer(
+                invites,
+                many=True,
+                context={"request": request},
+            ).data
+        )
 
     def post(self, request, session_id: int, *args, **kwargs) -> Response:
         session = get_object_or_404(selectors.get_session_queryset(), pk=session_id)
@@ -383,7 +402,10 @@ class SessionInvitesView(GamesAPIView):
             invitee=serializer.validated_data["invitee"],
         )
         invite.refresh_from_db()
-        return Response(SessionInviteSerializer(invite).data, status=status.HTTP_201_CREATED)
+        return Response(
+            SessionInviteSerializer(invite, context={"request": request}).data,
+            status=status.HTTP_201_CREATED,
+        )
 
 
 class SessionSelfInviteView(GamesAPIView):
@@ -395,32 +417,34 @@ class SessionSelfInviteView(GamesAPIView):
         session = get_object_or_404(selectors.get_session_queryset(), pk=session_id)
         invite = services.self_invite(session=session, user=request.user)
         invite.refresh_from_db()
-        return Response(SessionInviteSerializer(invite).data, status=status.HTTP_201_CREATED)
+        return Response(
+            SessionInviteSerializer(invite, context={"request": request}).data,
+            status=status.HTTP_201_CREATED,
+        )
 
 
 class SessionInviteDetailView(GamesAPIView):
     """PATCH rsvp/faction + DELETE withdraw."""
 
-    def get_permissions(self):
-        return [IsPlayerUser()]
+    permission_classes = [IsInviteOwnerOrSessionCreatorOrAdmin]
 
     def _get_invite(self, session_id: int, invite_id: int):
         from .models import SessionInvite
 
         return get_object_or_404(
-            SessionInvite.objects.select_related("session", "user"),
+            SessionInvite.objects.select_related(
+                "session",
+                "user__profile__current_avatar",
+                "invited_by__profile",
+                "desired_faction",
+            ),
             pk=invite_id,
             session_id=session_id,
         )
 
     def patch(self, request, session_id: int, invite_id: int, *args, **kwargs) -> Response:
         invite = self._get_invite(session_id, invite_id)
-
-        # Only invite owner or session creator/admin can patch
-        if invite.user_id != request.user.pk and not (
-            request.user.is_staff or invite.session.created_by_id == request.user.pk
-        ):
-            raise PermissionDenied
+        self.check_object_permissions(request, invite)
 
         serializer = UpdateRsvpSerializer(data=request.data, partial=True)
         serializer.is_valid(raise_exception=True)
@@ -434,14 +458,11 @@ class SessionInviteDetailView(GamesAPIView):
             updated = invite
 
         updated.refresh_from_db()
-        return Response(SessionInviteSerializer(updated).data)
+        return Response(SessionInviteSerializer(updated, context={"request": request}).data)
 
     def delete(self, request, session_id: int, invite_id: int, *args, **kwargs) -> Response:
         invite = self._get_invite(session_id, invite_id)
-        if invite.user_id != request.user.pk and not (
-            request.user.is_staff or invite.session.created_by_id == request.user.pk
-        ):
-            raise PermissionDenied
+        self.check_object_permissions(request, invite)
         services.withdraw_invite(invite=invite)
         return Response(status=status.HTTP_204_NO_CONTENT)
 

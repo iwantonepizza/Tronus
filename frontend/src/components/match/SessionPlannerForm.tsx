@@ -4,6 +4,8 @@ import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { Select } from '@/components/ui/Select'
 import { cn } from '@/lib/cn'
+import { formatPlayerRange } from '@/lib/format'
+import { toDateTimeLocalValue } from '@/lib/session-planner'
 import type {
   DomainDeck,
   DomainFaction,
@@ -72,7 +74,7 @@ export function SessionPlannerForm({
 }: SessionPlannerFormProps) {
   const [entryMode, setEntryMode] = useState<SessionEntryMode>(initialEntryMode)
   const [scheduledAt, setScheduledAt] = useState(
-    initialDraft.scheduledAt.slice(0, 16),
+    toDateTimeLocalValue(initialDraft.scheduledAt),
   )
   const [modeSlug, setModeSlug] = useState(initialDraft.modeSlug)
   const [deckSlug, setDeckSlug] = useState(initialDraft.deckSlug)
@@ -266,7 +268,7 @@ export function SessionPlannerForm({
                           {mode.name}
                         </h3>
                         <p className="mt-1 text-sm text-text-secondary">
-                          {mode.minPlayers}–{mode.maxPlayers} игроков
+                          {formatPlayerRange(mode.minPlayers, mode.maxPlayers)} игроков
                         </p>
                       </div>
                       {selected ? <Check className="h-5 w-5 text-gold" /> : null}

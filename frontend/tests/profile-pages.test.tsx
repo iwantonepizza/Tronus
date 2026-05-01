@@ -164,6 +164,33 @@ describe('profile pages', () => {
     })
   })
 
+  it('shows admin badge on profile for staff users', () => {
+    mockedUseCurrentUser.mockReturnValue({
+      data: {
+        id: 1,
+        username: 'ironfist@example.com',
+        email: 'ironfist@example.com',
+        is_active: true,
+        is_staff: true,
+        nickname: 'IronFist',
+        favorite_faction: 'lannister',
+        bio: 'King of the table.',
+        current_avatar: 'http://localhost:8000/media/avatars/1/current.png',
+        date_joined: '2026-04-22T00:00:00Z',
+      },
+      isLoading: false,
+      refetch: vi.fn(),
+    })
+
+    renderWithProviders(
+      <MemoryRouter>
+        <MyProfilePage />
+      </MemoryRouter>,
+    )
+
+    expect(screen.getAllByText('admin').length).toBeGreaterThan(0)
+  })
+
   it('renders avatar history and submits generation request', () => {
     const generateMock = vi.fn().mockResolvedValue(undefined)
     mockedUseGenerateAvatar.mockReturnValue({

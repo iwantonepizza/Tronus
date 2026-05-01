@@ -1,3 +1,4 @@
+import { useCallback, useEffect } from 'react'
 import { Trophy, Swords } from 'lucide-react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { FactionBadge } from '@/components/player/FactionBadge'
@@ -5,32 +6,65 @@ import { PlayerPill } from '@/components/player/PlayerPill'
 import { StatTile } from '@/components/stats/StatTile'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { Select } from '@/components/ui/Select'
-import { useHeadToHeadStats } from '@/hooks/useStats'
+import { useAuth } from '@/hooks/useAuth'
+import { useHeadToHeadStats, useSuggestedHeadToHeadOpponent } from '@/hooks/useStats'
 import { useUsers } from '@/hooks/useUsers'
+import { formatDateTimeLong } from '@/lib/dates'
 
 export function HeadToHeadPage() {
+  const { user } = useAuth()
   const usersQuery = useUsers()
   const [searchParams, setSearchParams] = useSearchParams()
 
   const selectedUserA = parseUserId(searchParams.get('user_a'))
   const selectedUserB = parseUserId(searchParams.get('user_b'))
+  const effectiveUserA = selectedUserA ?? user?.id
+  const suggestedOpponentQuery = useSuggestedHeadToHeadOpponent(effectiveUserA)
 
   const headToHeadQuery = useHeadToHeadStats(selectedUserA, selectedUserB)
   const users = usersQuery.data ?? []
 
-  const setSelectedUsers = (nextUserA?: number, nextUserB?: number) => {
-    const next = new URLSearchParams()
+  const setSelectedUsers = useCallback(
+    (nextUserA?: number, nextUserB?: number) => {
+      const next = new URLSearchParams()
 
-    if (nextUserA !== undefined) {
-      next.set('user_a', String(nextUserA))
+      if (nextUserA !== undefined) {
+        next.set('user_a', String(nextUserA))
+      }
+
+      if (nextUserB !== undefined) {
+        next.set('user_b', String(nextUserB))
+      }
+
+      setSearchParams(next, { replace: true })
+    },
+    [setSearchParams],
+  )
+
+  useEffect(() => {
+    if (
+      selectedUserA === undefined &&
+      user?.id !== undefined
+    ) {
+      setSelectedUsers(user.id, selectedUserB)
+    }
+  }, [selectedUserA, selectedUserB, setSelectedUsers, user?.id])
+
+  useEffect(() => {
+    const suggestedUserB = suggestedOpponentQuery.data
+
+    if (
+      effectiveUserA === undefined ||
+      selectedUserB !== undefined ||
+      suggestedUserB === undefined ||
+      suggestedUserB === null ||
+      suggestedUserB === effectiveUserA
+    ) {
+      return
     }
 
-    if (nextUserB !== undefined) {
-      next.set('user_b', String(nextUserB))
-    }
-
-    setSearchParams(next, { replace: true })
-  }
+    setSelectedUsers(effectiveUserA, suggestedUserB)
+  }, [effectiveUserA, selectedUserB, setSelectedUsers, suggestedOpponentQuery.data])
 
   const comparisonReady =
     selectedUserA !== undefined &&
@@ -236,7 +270,7 @@ function HeadToHeadContent({
                   </Link>
                   <p className="mt-2 text-sm text-text-secondary">
                     {formatDate(match.scheduledAt)} • {match.mode.name} •{' '}
-                    {match.deck.name}
+                    Колода: {match.deck.name}
                   </p>
                 </div>
                 <div className="text-sm text-text-tertiary">
@@ -359,5 +393,5 @@ function formatShare(total: number, wins: number) {
 }
 
 function formatDate(value: string) {
-  return new Date(value).toLocaleString()
+  return formatDateTimeLong(value)
 }

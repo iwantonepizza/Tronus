@@ -23,6 +23,18 @@ import type {
 type StatusFilter = SessionStatus | 'all'
 type SortOption = 'newest' | 'oldest' | 'longest'
 
+interface FiltersState {
+  status: StatusFilter
+  mode: string | 'all'
+  deck: string | 'all'
+  playerId: number | 'all'
+  faction: FactionSlug | 'all'
+  sort: SortOption
+  query: string
+  dateFrom: string
+  dateTo: string
+}
+
 const statusOptions: Array<{ label: string; value: StatusFilter }> = [
   { label: 'Все', value: 'all' },
   { label: 'В процессе', value: 'in_progress' },
@@ -37,56 +49,62 @@ const sortOptions: Array<{ label: string; value: SortOption }> = [
   { label: 'По раундам', value: 'longest' },
 ]
 
+const defaultFilters: FiltersState = {
+  status: 'all',
+  mode: 'all',
+  deck: 'all',
+  playerId: 'all',
+  faction: 'all',
+  sort: 'newest',
+  query: '',
+  dateFrom: '',
+  dateTo: '',
+}
+
 export function MatchesPage() {
   const referenceQuery = useReferenceData()
   const usersQuery = useUsers()
   const sessionsQuery = useSessions()
 
-  const [status, setStatus] = useState<StatusFilter>('all')
-  const [mode, setMode] = useState<string | 'all'>('all')
-  const [deck, setDeck] = useState<string | 'all'>('all')
-  const [playerId, setPlayerId] = useState<number | 'all'>('all')
-  const [faction, setFaction] = useState<FactionSlug | 'all'>('all')
-  const [sort, setSort] = useState<SortOption>('newest')
-  const [query, setQuery] = useState('')
-  const [dateFrom, setDateFrom] = useState('')
-  const [dateTo, setDateTo] = useState('')
+  const [filters, setFilters] = useState<FiltersState>(defaultFilters)
+  const [mobileDraftFilters, setMobileDraftFilters] =
+    useState<FiltersState>(defaultFilters)
   const [isFiltersOpen, setIsFiltersOpen] = useState(false)
 
   const filteredMatches = (sessionsQuery.data ?? [])
     .filter((match) => {
-      if (status !== 'all' && match.status !== status) {
+      if (filters.status !== 'all' && match.status !== filters.status) {
         return false
       }
 
-      if (mode !== 'all' && match.mode.slug !== mode) {
+      if (filters.mode !== 'all' && match.mode.slug !== filters.mode) {
         return false
       }
 
-      if (deck !== 'all' && match.deck.slug !== deck) {
+      if (filters.deck !== 'all' && match.deck.slug !== filters.deck) {
         return false
       }
 
       if (
-        playerId !== 'all' &&
+        filters.playerId !== 'all' &&
         !match.participations.some(
-          (participation) => participation.user.id === playerId,
+          (participation) => participation.user.id === filters.playerId,
         )
       ) {
         return false
       }
 
       if (
-        faction !== 'all' &&
+        filters.faction !== 'all' &&
         !match.participations.some(
-          (participation) => participation.faction === faction,
+          (participation) => participation.faction === filters.faction,
         )
       ) {
         return false
       }
 
-      if (query.trim()) {
-        const normalizedQuery = query.trim().toLowerCase()
+      if (filters.query.trim()) {
+        const normalizedQuery = filters.query.trim().toLowerCase()
         const hitsQuery =
           match.planningNote.toLowerCase().includes(normalizedQuery) ||
           String(match.id).includes(normalizedQuery) ||
@@ -101,25 +119,25 @@ export function MatchesPage() {
 
       const matchDate = match.scheduledAt.slice(0, 10)
 
-      if (dateFrom && matchDate < dateFrom) {
+      if (filters.dateFrom && matchDate < filters.dateFrom) {
         return false
       }
 
-      if (dateTo && matchDate > dateTo) {
+      if (filters.dateTo && matchDate > filters.dateTo) {
         return false
       }
 
       return true
     })
     .sort((left, right) => {
-      if (sort === 'newest') {
+      if (filters.sort === 'newest') {
         return (
           new Date(right.scheduledAt).getTime() -
           new Date(left.scheduledAt).getTime()
         )
       }
 
-      if (sort === 'oldest') {
+      if (filters.sort === 'oldest') {
         return (
           new Date(left.scheduledAt).getTime() -
           new Date(right.scheduledAt).getTime()
@@ -131,16 +149,35 @@ export function MatchesPage() {
       )
     })
 
+  const updateFilters = (patch: Partial<FiltersState>) => {
+    setFilters((current) => ({ ...current, ...patch }))
+  }
+
+  const updateMobileDraftFilters = (patch: Partial<FiltersState>) => {
+    setMobileDraftFilters((current) => ({ ...current, ...patch }))
+  }
+
   const resetFilters = () => {
-    setStatus('all')
-    setMode('all')
-    setDeck('all')
-    setPlayerId('all')
-    setFaction('all')
-    setSort('newest')
-    setQuery('')
-    setDateFrom('')
-    setDateTo('')
+    setFilters(defaultFilters)
+  }
+
+  const resetMobileDraftFilters = () => {
+    setMobileDraftFilters(defaultFilters)
+  }
+
+  const openMobileFilters = () => {
+    setMobileDraftFilters(filters)
+    setIsFiltersOpen(true)
+  }
+
+  const closeMobileFilters = () => {
+    setMobileDraftFilters(filters)
+    setIsFiltersOpen(false)
+  }
+
+  const applyMobileFilters = () => {
+    setFilters(mobileDraftFilters)
+    setIsFiltersOpen(false)
   }
 
   if (
@@ -200,7 +237,7 @@ export function MatchesPage() {
               className="lg:hidden"
               iconLeft={<Funnel className="h-4 w-4" />}
               variant="secondary"
-              onClick={() => setIsFiltersOpen(true)}
+              onClick={openMobileFilters}
             >
               Фильтры
             </Button>
@@ -217,29 +254,29 @@ export function MatchesPage() {
       <div className="grid gap-6 lg:grid-cols-[280px_1fr]">
         <aside className="hidden lg:block">
           <FiltersPanel
-            dateFrom={dateFrom}
-            dateTo={dateTo}
-            deck={deck}
+            dateFrom={filters.dateFrom}
+            dateTo={filters.dateTo}
+            deck={filters.deck}
             decks={referenceQuery.data?.decks ?? []}
-            faction={faction}
+            faction={filters.faction}
             factions={referenceQuery.data?.factions ?? []}
-            mode={mode}
+            mode={filters.mode}
             modes={referenceQuery.data?.modes ?? []}
-            playerId={playerId}
+            playerId={filters.playerId}
             players={usersQuery.data ?? []}
-            query={query}
-            sort={sort}
-            status={status}
-            onDateFromChange={setDateFrom}
-            onDateToChange={setDateTo}
-            onDeckChange={setDeck}
-            onFactionChange={setFaction}
-            onModeChange={setMode}
-            onPlayerChange={setPlayerId}
-            onQueryChange={setQuery}
+            query={filters.query}
+            sort={filters.sort}
+            status={filters.status}
+            onDateFromChange={(value) => updateFilters({ dateFrom: value })}
+            onDateToChange={(value) => updateFilters({ dateTo: value })}
+            onDeckChange={(value) => updateFilters({ deck: value })}
+            onFactionChange={(value) => updateFilters({ faction: value })}
+            onModeChange={(value) => updateFilters({ mode: value })}
+            onPlayerChange={(value) => updateFilters({ playerId: value })}
+            onQueryChange={(value) => updateFilters({ query: value })}
             onReset={resetFilters}
-            onSortChange={setSort}
-            onStatusChange={setStatus}
+            onSortChange={(value) => updateFilters({ sort: value })}
+            onStatusChange={(value) => updateFilters({ status: value })}
           />
         </aside>
 
@@ -249,9 +286,9 @@ export function MatchesPage() {
               {statusOptions.map((option) => (
                 <FilterChip
                   key={option.value}
-                  active={status === option.value}
+                  active={filters.status === option.value}
                   label={option.label}
-                  onClick={() => setStatus(option.value)}
+                  onClick={() => updateFilters({ status: option.value })}
                 />
               ))}
             </div>
@@ -292,33 +329,51 @@ export function MatchesPage() {
 
       <Modal
         isOpen={isFiltersOpen}
-        onClose={() => setIsFiltersOpen(false)}
+        onClose={closeMobileFilters}
         title="Фильтры матчей"
       >
         <FiltersPanel
-          dateFrom={dateFrom}
-          dateTo={dateTo}
-          deck={deck}
+          dateFrom={mobileDraftFilters.dateFrom}
+          dateTo={mobileDraftFilters.dateTo}
+          deck={mobileDraftFilters.deck}
           decks={referenceQuery.data?.decks ?? []}
-          faction={faction}
+          faction={mobileDraftFilters.faction}
           factions={referenceQuery.data?.factions ?? []}
-          mode={mode}
+          mode={mobileDraftFilters.mode}
           modes={referenceQuery.data?.modes ?? []}
-          playerId={playerId}
+          playerId={mobileDraftFilters.playerId}
           players={usersQuery.data ?? []}
-          query={query}
-          sort={sort}
-          status={status}
-          onDateFromChange={setDateFrom}
-          onDateToChange={setDateTo}
-          onDeckChange={setDeck}
-          onFactionChange={setFaction}
-          onModeChange={setMode}
-          onPlayerChange={setPlayerId}
-          onQueryChange={setQuery}
-          onReset={resetFilters}
-          onSortChange={setSort}
-          onStatusChange={setStatus}
+          query={mobileDraftFilters.query}
+          sort={mobileDraftFilters.sort}
+          status={mobileDraftFilters.status}
+          onDateFromChange={(value) =>
+            updateMobileDraftFilters({ dateFrom: value })
+          }
+          onDateToChange={(value) =>
+            updateMobileDraftFilters({ dateTo: value })
+          }
+          onDeckChange={(value) => updateMobileDraftFilters({ deck: value })}
+          onFactionChange={(value) =>
+            updateMobileDraftFilters({ faction: value })
+          }
+          onModeChange={(value) => updateMobileDraftFilters({ mode: value })}
+          onPlayerChange={(value) =>
+            updateMobileDraftFilters({ playerId: value })
+          }
+          onQueryChange={(value) => updateMobileDraftFilters({ query: value })}
+          onReset={resetMobileDraftFilters}
+          onSortChange={(value) => updateMobileDraftFilters({ sort: value })}
+          onStatusChange={(value) =>
+            updateMobileDraftFilters({ status: value })
+          }
+          footer={
+            <div className="mt-6 grid gap-3 sm:grid-cols-2">
+              <Button variant="secondary" onClick={closeMobileFilters}>
+                Отмена
+              </Button>
+              <Button onClick={applyMobileFilters}>Применить</Button>
+            </div>
+          }
         />
       </Modal>
     </main>
@@ -349,6 +404,7 @@ function FiltersPanel({
   onReset,
   onSortChange,
   onStatusChange,
+  footer,
 }: {
   dateFrom: string
   dateTo: string
@@ -373,6 +429,7 @@ function FiltersPanel({
   onReset: () => void
   onSortChange: (value: SortOption) => void
   onStatusChange: (value: StatusFilter) => void
+  footer?: ReactNode
 }) {
   return (
     <div className="space-y-5 rounded-[2rem] border border-border-subtle bg-bg-elev1 p-5 shadow-panel">
@@ -506,6 +563,8 @@ function FiltersPanel({
           ))}
         </div>
       </div>
+
+      {footer}
     </div>
   )
 }

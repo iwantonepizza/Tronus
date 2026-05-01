@@ -6,6 +6,11 @@ import { SessionPlannerForm } from '@/components/match/SessionPlannerForm'
 import { Button } from '@/components/ui/Button'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { useReferenceData } from '@/hooks/useReferenceData'
+import {
+  readLastCreateSelection,
+  roundDateUpToFiveMinutes,
+  writeLastCreateSelection,
+} from '@/lib/session-planner'
 import { useCreateSession } from '@/hooks/useSessions'
 import { useUsers } from '@/hooks/useUsers'
 import type { SessionPlannerDraft } from '@/types/domain'
@@ -27,11 +32,25 @@ export function CreateSessionPage() {
       return null
     }
 
+    const lastCreate = readLastCreateSelection()
+    const fallbackModeSlug = referenceQuery.data.modes[0]?.slug ?? 'classic'
+    const fallbackDeckSlug = referenceQuery.data.decks[0]?.slug ?? 'original'
+    const modeSlug = referenceQuery.data.modes.some(
+      (mode) => mode.slug === lastCreate?.modeSlug,
+    )
+      ? lastCreate!.modeSlug
+      : fallbackModeSlug
+    const deckSlug = referenceQuery.data.decks.some(
+      (deck) => deck.slug === lastCreate?.deckSlug,
+    )
+      ? lastCreate!.deckSlug
+      : fallbackDeckSlug
+
     return {
       id: 901,
-      scheduledAt: '2026-05-16T19:30:00Z',
-      modeSlug: referenceQuery.data.modes[0]?.slug ?? 'classic',
-      deckSlug: referenceQuery.data.decks[0]?.slug ?? 'original',
+      scheduledAt: roundDateUpToFiveMinutes(new Date()).toISOString(),
+      modeSlug,
+      deckSlug,
       planningNote:
         'Вечерний стол без спешки, с таймером и чётким финалом.',
       participantSeeds: [],
@@ -89,6 +108,11 @@ export function CreateSessionPage() {
           const { buildMatchFromPlannerDraft } = await import('@/mocks/session-factory')
           const match = buildMatchFromPlannerDraft(draft)
 
+          writeLastCreateSelection({
+            modeSlug: draft.modeSlug,
+            deckSlug: draft.deckSlug,
+          })
+
           if (entryMode === 'played') {
             navigate(`/matches/${match.id}/finalize-played`, { state: { match } })
             return
@@ -103,6 +127,11 @@ export function CreateSessionPage() {
           mode: draft.modeSlug,
           deck: draft.deckSlug,
           planning_note: draft.planningNote,
+        })
+
+        writeLastCreateSelection({
+          modeSlug: draft.modeSlug,
+          deckSlug: draft.deckSlug,
         })
 
         // For the 'played' entry mode the dedicated retroactive page accepts

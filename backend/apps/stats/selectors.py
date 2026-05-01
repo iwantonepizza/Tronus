@@ -679,6 +679,33 @@ def head_to_head_stats(*, user_a_id: int, user_b_id: int) -> dict[str, Any]:
     }
 
 
+def suggest_h2h_opponent(*, for_user_id: int) -> int | None:
+    get_public_user_queryset().get(pk=for_user_id)
+
+    common_opponents = (
+        Participation.objects.filter(
+            session__status=GameSession.Status.COMPLETED,
+            session__participations__user_id=for_user_id,
+            user__is_active=True,
+        )
+        .exclude(user_id=for_user_id)
+        .values("user_id")
+        .annotate(common_games=Count("session_id", distinct=True))
+        .order_by("-common_games", "user__profile__nickname", "user_id")
+    )
+    top_common = common_opponents.first()
+    if top_common is not None:
+        return top_common["user_id"]
+
+    leaderboard = leaderboard_stats(metric="wins", limit=100)
+    for row in leaderboard["results"]:
+        candidate = row["user"]
+        if candidate.pk != for_user_id:
+            return candidate.pk
+
+    return None
+
+
 def session_fun_facts(session) -> list[dict[str, str]]:
     """Compute 3-5 interesting facts about a completed session using its round snapshots.
 

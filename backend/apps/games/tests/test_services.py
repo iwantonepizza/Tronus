@@ -7,6 +7,7 @@ from django.core.exceptions import ValidationError
 from django.utils import timezone
 
 from apps.accounts.models import User
+from apps.comments.models import MatchComment
 from apps.games.models import GameSession, Outcome, Participation, RoundSnapshot, SessionInvite
 from apps.games.services import (
     add_participant,
@@ -15,6 +16,7 @@ from apps.games.services import (
     create_session,
     discard_last_round,
     finalize_session,
+    force_remove_participation,
     remove_participant,
     start_session,
     update_planning,
@@ -1272,3 +1274,54 @@ def test_discard_last_round_refuses_round_zero() -> None:
         discard_last_round(session=session)
 
     assert "round" in exc_info.value.message_dict
+
+
+@pytest.mark.django_db
+def test_force_remove_participation_deletes_active_player_and_writes_timeline() -> None:
+    creator = _create_user(email="creator_force@example.com")
+    player_one = _create_user(email="player1_force@example.com")
+    player_two = _create_user(email="player2_force@example.com")
+    session = _create_planned_session(created_by=creator)
+
+    participation_ids = _start_session_for_test(
+        session,
+        [creator, player_one, player_two],
+        ["stark", "lannister", "baratheon"],
+    )
+    participation = Participation.objects.get(pk=participation_ids[1])
+
+    force_remove_participation(participation=participation, by_user=creator)
+
+    assert Participation.objects.filter(pk=participation.pk).exists() is False
+
+    timeline_event = session.timeline_events.get(kind="participant_removed")
+    assert timeline_event.payload["participation_id"] == participation.pk
+    assert timeline_event.payload["user_id"] == player_one.pk
+    assert timeline_event.payload["faction_slug"] == "lannister"
+    assert timeline_event.actor_id == creator.pk
+
+    chronicler_comment = MatchComment.objects.get(chronicler_event=timeline_event)
+    assert player_one.profile.nickname in chronicler_comment.body
+
+
+@pytest.mark.django_db
+def test_force_remove_participation_rejects_non_creator_non_admin() -> None:
+    creator = _create_user(email="creator_force_denied@example.com")
+    player_one = _create_user(email="player1_force_denied@example.com")
+    player_two = _create_user(email="player2_force_denied@example.com")
+    stranger = _create_user(email="stranger_force_denied@example.com")
+    session = _create_planned_session(created_by=creator)
+
+    participation_ids = _start_session_for_test(
+        session,
+        [creator, player_one, player_two],
+        ["stark", "lannister", "baratheon"],
+    )
+    participation = Participation.objects.get(pk=participation_ids[1])
+
+    with pytest.raises(ValidationError) as exc_info:
+        force_remove_participation(participation=participation, by_user=stranger)
+
+    assert exc_info.value.message_dict == {
+        "permission": ["Только создатель партии или администратор может удалить участника после старта."]
+    }

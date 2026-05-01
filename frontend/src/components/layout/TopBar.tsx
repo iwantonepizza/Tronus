@@ -1,10 +1,11 @@
 import { useEffect, useRef, useState } from 'react'
 import { Bell, Check, CheckCheck, Search } from 'lucide-react'
 import { Link } from 'react-router-dom'
-import { format } from 'date-fns'
 import { BRAND_MARK } from '@/components/layout/navigation'
+import { AdminBadge } from '@/components/ui/AdminBadge'
 import { useAuth } from '@/hooks/useAuth'
 import { useMarkAllRead, useMarkRead, useNotifications } from '@/hooks/useNotifications'
+import { formatDateTimeCompact } from '@/lib/dates'
 import { cn } from '@/lib/cn'
 import type { ApiNotification } from '@/api/types'
 
@@ -36,7 +37,7 @@ function NotificationItem({
           {KIND_LABEL[notification.kind] ?? notification.kind}
         </p>
         <p className="mt-0.5 text-xs text-text-tertiary">
-          {format(new Date(notification.created_at), 'dd.MM HH:mm')}
+          {formatDateTimeCompact(notification.created_at)}
         </p>
       </div>
       {!notification.is_read && (
@@ -136,6 +137,7 @@ interface TopBarProps {
 export function TopBar({ onSearchOpen }: TopBarProps) {
   const BrandMark = BRAND_MARK
   const { isAuthenticated, user } = useAuth()
+  const isAdmin = Boolean(user?.is_staff || user?.is_superuser)
 
   return (
     <header className="sticky top-0 z-40 border-b border-border-subtle bg-bg-base/85 backdrop-blur-xl">
@@ -171,7 +173,10 @@ export function TopBar({ onSearchOpen }: TopBarProps) {
             <span className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-gold/35 bg-gold/10 font-semibold text-gold">
               {user.nickname.slice(0, 1).toUpperCase()}
             </span>
-            <span className="hidden md:inline">{user.nickname}</span>
+            <span className="hidden items-center gap-2 md:inline-flex">
+              <span>{user.nickname}</span>
+              {isAdmin ? <AdminBadge /> : null}
+            </span>
           </Link>
         ) : (
           <Link

@@ -364,11 +364,30 @@ export function useStartSession(sessionId: number) {
 }
 
 export function useInvites(sessionId: number | null) {
-  return useQuery<ApiSessionInvite[], Error>({
+  const mockQuery = useQuery<ApiSessionInvite[], Error>({
+    queryKey: ['invites', 'mock', sessionId],
+    queryFn: async () => {
+      const { getMockInvitesForMatch } = await import('@/mocks/data')
+      return getMockInvitesForMatch(sessionId!)
+    },
+    enabled: USE_MOCKS && sessionId !== null,
+  })
+
+  const query = useQuery<ApiSessionInvite[], Error>({
     queryKey: ['invites', sessionId],
     queryFn: () => listInvites(sessionId!),
-    enabled: sessionId !== null,
+    enabled: sessionId !== null && !USE_MOCKS,
   })
+
+  if (USE_MOCKS) {
+    return {
+      data: mockQuery.data ?? [],
+      isLoading: mockQuery.isLoading,
+      isError: mockQuery.isError,
+    }
+  }
+
+  return query
 }
 
 export function useInviteUser(sessionId: number) {

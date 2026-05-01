@@ -174,6 +174,14 @@ class HeadToHeadQuerySerializer(serializers.Serializer):
         return attrs
 
 
+class HeadToHeadSuggestedQuerySerializer(serializers.Serializer):
+    for_user = serializers.IntegerField(min_value=1)
+
+
+class HeadToHeadSuggestedSerializer(serializers.Serializer):
+    interesting_opponent_id = serializers.IntegerField(min_value=1, allow_null=True)
+
+
 class HeadToHeadSideSerializer(serializers.Serializer):
     faction = serializers.CharField()
     place = serializers.IntegerField(allow_null=True)

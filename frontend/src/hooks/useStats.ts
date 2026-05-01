@@ -2,6 +2,7 @@ import { useQuery } from '@tanstack/react-query'
 import {
   getFactionStats,
   getHeadToHeadStats,
+  getSuggestedHeadToHeadOpponent,
   getLeaderboardStats,
   getOverviewStats,
   getPlayerStats,
@@ -83,6 +84,22 @@ export function useHeadToHeadStats(userA?: number, userB?: number) {
       return toDomainHeadToHeadStats(await getHeadToHeadStats({ userA, userB }))
     },
     enabled: userA !== undefined && userB !== undefined,
+    staleTime: 60 * 1000,
+  })
+}
+
+export function useSuggestedHeadToHeadOpponent(forUser?: number) {
+  return useQuery({
+    queryKey: ['stats', 'head-to-head', 'suggested', forUser],
+    queryFn: async () => {
+      if (forUser === undefined) {
+        throw new Error('Missing user for suggested head-to-head query.')
+      }
+
+      const response = await getSuggestedHeadToHeadOpponent(forUser)
+      return response.interesting_opponent_id
+    },
+    enabled: forUser !== undefined,
     staleTime: 60 * 1000,
   })
 }

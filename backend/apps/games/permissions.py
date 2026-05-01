@@ -35,3 +35,16 @@ class IsSessionCreatorOrAdmin(BasePermission):
             or request.user.is_staff
             or request.user.is_superuser
         )
+
+
+class IsInviteOwnerOrSessionCreatorOrAdmin(BasePermission):
+    def has_permission(self, request, view) -> bool:
+        return bool(request.user and request.user.is_authenticated)
+
+    def has_object_permission(self, request, view, obj) -> bool:
+        return bool(
+            obj.user_id == request.user.pk
+            or obj.session.created_by_id == request.user.pk
+            or request.user.is_staff
+            or request.user.is_superuser
+        )

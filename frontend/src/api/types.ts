@@ -121,6 +121,7 @@ export type TimelineEventKind =
   | 'wildlings_raid'
   | 'clash_of_kings'
   | 'event_card_played'
+  | 'participant_removed'
   | 'participant_replaced'
   | 'session_finalized'
 
@@ -140,6 +141,16 @@ export interface PaginatedResponse<T> {
 export interface ApiUserSummary {
   id: number
   nickname: string
+}
+
+export interface ApiInviteUserSummary extends ApiUserSummary {
+  avatar_url: string | null
+}
+
+export interface ApiInviteFactionSummary {
+  slug: FactionSlug
+  display_name: string
+  color: string
 }
 
 export interface ApiSessionListItem {
@@ -178,9 +189,10 @@ export interface ApiSessionDetail extends ApiSessionListItem {
 // Wave 6 types
 export interface ApiSessionInvite {
   id: number
-  user: ApiUserSummary
+  user: ApiInviteUserSummary
   rsvp_status: RsvpStatus
   desired_faction: string | null
+  desired_faction_summary: ApiInviteFactionSummary | null
   invited_by: ApiUserSummary | null
   created_at: string
 }
@@ -469,6 +481,10 @@ export interface ApiHeadToHeadStats {
     user_b: FactionSlug | null
   }
   matches: ApiHeadToHeadMatch[]
+}
+
+export interface ApiHeadToHeadSuggested {
+  interesting_opponent_id: number | null
 }
 
 export interface ApiAvatarAsset {

@@ -1,6 +1,5 @@
 import { useState } from 'react'
 import type { ReactNode } from 'react'
-import { format } from 'date-fns'
 import {
   ArrowLeft,
   Castle,
@@ -30,6 +29,7 @@ import {
   useUpdateVote,
   useVotes,
 } from '@/hooks/useVotes'
+import { formatDateTimeLong } from '@/lib/dates'
 import type { DomainComment, DomainVote } from '@/types/domain'
 
 const USE_MOCKS = __USE_MOCKS__
@@ -72,7 +72,12 @@ export function MatchDetailPage() {
     )
   }
 
-  if (sessionQuery.isError || commentsQuery.isError || votesQuery.isError) {
+  if (
+    sessionQuery.isError ||
+    commentsQuery.isError ||
+    votesQuery.isError ||
+    timelineQuery.isError
+  ) {
     return <Navigate replace to="/404" />
   }
 
@@ -96,10 +101,9 @@ export function MatchDetailPage() {
       comments={commentsQuery.data ?? []}
       currentUser={user}
       initialMatch={match}
-      timelineEvents={timelineQuery.data ?? []}
-      timelineIsError={timelineQuery.isError}
-      timelineIsLoading={timelineQuery.isLoading}
       initialVotes={votesQuery.data ?? []}
+      timelineEvents={timelineQuery.data ?? []}
+      timelineIsLoading={timelineQuery.isLoading}
     />
   )
 }
@@ -108,18 +112,16 @@ function MatchDetailContent({
   comments,
   currentUser,
   initialMatch,
-  timelineEvents,
-  timelineIsError,
-  timelineIsLoading,
   initialVotes,
+  timelineEvents,
+  timelineIsLoading,
 }: {
   comments: DomainComment[]
   currentUser: ReturnType<typeof useAuth>['user']
   initialMatch: NonNullable<ReturnType<typeof useSessionDetail>['data']>
-  timelineEvents: ApiTimelineEvent[]
-  timelineIsError: boolean
-  timelineIsLoading: boolean
   initialVotes: DomainVote[]
+  timelineEvents: ApiTimelineEvent[]
+  timelineIsLoading: boolean
 }) {
   const postCommentMutation = usePostComment(initialMatch.id)
   const cancelSessionMutation = useCancelSession(initialMatch.id)
@@ -138,19 +140,21 @@ function MatchDetailContent({
   const match = USE_MOCKS ? mockMatch : initialMatch
   const votes = USE_MOCKS ? mockVotes : initialVotes
   const resolvedComments = USE_MOCKS ? mockComments : comments
-  const canManagePlannedMatch =
-    currentUser !== null &&
-    match.status === 'planned' &&
-    currentUser.id === match.createdBy.id
+  const isCreatorOrAdmin = Boolean(
+    currentUser &&
+      (currentUser.id === match.createdBy.id ||
+        currentUser.is_staff === true ||
+        currentUser.is_superuser === true),
+  )
+  const canManagePlannedMatch = isCreatorOrAdmin && match.status === 'planned'
+  const shouldRenderStandings =
+    match.status === 'in_progress' || match.status === 'completed'
 
   const sortedParticipations = [...match.participations].sort(
     (left, right) => (left.place ?? 99) - (right.place ?? 99),
   )
 
-  const handleVote = async (
-    toUserId: number,
-    voteType: DomainVote['voteType'],
-  ) => {
+  const handleVote = async (toUserId: number, voteType: DomainVote['voteType']) => {
     if (!currentUser) {
       return
     }
@@ -265,6 +269,7 @@ function MatchDetailContent({
     const confirmed = window.confirm(
       'Отменить эту партию? Статус сменится на cancelled.',
     )
+
     if (!confirmed) {
       return
     }
@@ -289,9 +294,7 @@ function MatchDetailContent({
     }
   }
 
-  const totalCrowns = votes.filter(
-    (vote) => vote.voteType === 'positive',
-  ).length
+  const totalCrowns = votes.filter((vote) => vote.voteType === 'positive').length
   const totalShits = votes.filter((vote) => vote.voteType === 'negative').length
 
   return (
@@ -323,7 +326,7 @@ function MatchDetailContent({
               {match.mode.name}
             </span>
             <span className="rounded-full border border-border-subtle bg-bg-base px-3 py-1 text-xs text-text-secondary">
-              {match.deck.name}
+              Колода: {match.deck.name}
             </span>
           </div>
 
@@ -331,8 +334,7 @@ function MatchDetailContent({
             Карточка партии
           </h1>
           <p className="mt-3 text-base leading-7 text-text-secondary">
-            {format(new Date(match.scheduledAt), 'dd MMMM yyyy, HH:mm')} • ведущий{' '}
-            {match.createdBy.nickname}
+            {formatDateTimeLong(match.scheduledAt)} • ведущий {match.createdBy.nickname}
           </p>
           <p className="mt-4 max-w-3xl text-sm leading-7 text-text-secondary">
             {match.planningNote}
@@ -341,25 +343,31 @@ function MatchDetailContent({
           <div className="mt-6 flex flex-wrap gap-3">
             {match.status === 'planned' ? (
               <>
-                <Link
-                  to={`/matches/${match.id}/start`}
-                  className="inline-flex h-11 items-center justify-center rounded-2xl bg-gold px-4 text-sm font-semibold text-black transition hover:bg-gold-hover"
-                >
-                  Начать партию
-                </Link>
-                <Link
-                  to={`/matches/${match.id}/edit`}
-                  className="inline-flex h-11 items-center justify-center rounded-2xl border border-border-subtle px-4 text-sm font-semibold text-text-primary transition hover:border-gold hover:text-gold"
-                >
-                  Редактировать
-                </Link>
+                {isCreatorOrAdmin ? (
+                  <>
+                    <Link
+                      to={`/matches/${match.id}/start`}
+                      className="inline-flex h-11 items-center justify-center rounded-2xl bg-gold px-4 text-sm font-semibold text-black transition hover:bg-gold-hover"
+                    >
+                      Начать партию
+                    </Link>
+                    <Link
+                      to={`/matches/${match.id}/edit`}
+                      className="inline-flex h-11 items-center justify-center rounded-2xl border border-border-subtle px-4 text-sm font-semibold text-text-primary transition hover:border-gold hover:text-gold"
+                    >
+                      Редактировать
+                    </Link>
+                  </>
+                ) : null}
                 {canManagePlannedMatch ? (
                   <Button onClick={() => void handleCancelSession()} variant="danger">
                     Отменить партию
                   </Button>
                 ) : null}
               </>
-            ) : match.status === 'in_progress' ? (
+            ) : null}
+
+            {match.status === 'in_progress' && isCreatorOrAdmin ? (
               <>
                 <Link
                   to={`/matches/${match.id}/rounds`}
@@ -373,145 +381,231 @@ function MatchDetailContent({
                 >
                   Завершить
                 </Link>
-                {canManagePlannedMatch ? (
-                  <Button onClick={() => void handleCancelSession()} variant="danger">
-                    Отменить партию
-                  </Button>
-                ) : null}
               </>
-            ) : (
+            ) : null}
+
+            {match.status === 'completed' ? (
               <div className="flex flex-wrap gap-3">
                 <Button variant="secondary">Открыть профиль победителя</Button>
                 <Button variant="ghost">Поделиться ссылкой</Button>
               </div>
-            )}
+            ) : null}
           </div>
-          {match.status === 'planned' ? (
+
+          {match.status === 'planned' || match.status === 'cancelled' ? (
             <div className="mt-5">
-              <RsvpBlock sessionId={match.id} />
+              <RsvpBlock
+                sessionCreatorId={match.createdBy.id}
+                sessionId={match.id}
+                sessionStatus={match.status}
+              />
             </div>
           ) : null}
         </section>
 
-        <div className="grid gap-6 xl:grid-cols-[1fr_320px]">
-          <div className="space-y-6">
-            <section className="rounded-[2rem] border border-border-subtle bg-bg-elev1 p-5 shadow-panel">
-              <div className="flex items-center justify-between gap-3">
-                <h2 className="font-display text-3xl text-text-primary">
-                  Итоговая таблица
-                </h2>
-                <span className="text-sm text-text-secondary">
-                  Участников: {sortedParticipations.length}
-                </span>
-              </div>
-              <div className="mt-5 space-y-3">
-                {sortedParticipations.map((participation) => (
-                  <Link
-                    key={participation.id}
-                    to={`/players/${participation.user.id}`}
-                    className="block"
-                  >
-                    <PlacementRow participation={participation} />
-                  </Link>
-                ))}
-              </div>
-            </section>
-
-            <section className="grid gap-4 md:grid-cols-3">
-              <StatTile
-                icon={<ScrollText className="h-5 w-5" />}
-                label="Раундов"
-                value={match.outcome?.roundsPlayed ?? '—'}
-              />
-              <StatTile
-                icon={<Trophy className="h-5 w-5" />}
-                label="Причина"
-                value={
-                  match.outcome
-                    ? endReasonLabels[match.outcome.endReason]
-                    : 'Итог ещё не зафиксирован'
-                }
-              />
-              <StatTile
-                icon={<Crown className="h-5 w-5" />}
-                label="MVP"
-                value={match.outcome?.mvp?.nickname ?? '—'}
-              />
-            </section>
-
-            {match.outcome?.finalNote ? (
+        {shouldRenderStandings ? (
+          <div className="grid gap-6 xl:grid-cols-[1fr_320px]">
+            <div className="space-y-6">
               <section className="rounded-[2rem] border border-border-subtle bg-bg-elev1 p-5 shadow-panel">
-                <h2 className="font-display text-3xl text-text-primary">
-                  Итоговая заметка
-                </h2>
-                <p className="mt-4 text-sm leading-7 text-text-secondary">
-                  {match.outcome.finalNote}
-                </p>
+                <div className="flex items-center justify-between gap-3">
+                  <h2 className="font-display text-3xl text-text-primary">
+                    Итоговая таблица
+                  </h2>
+                  <span className="text-sm text-text-secondary">
+                    Участников: {sortedParticipations.length}
+                  </span>
+                </div>
+                <div className="mt-5 space-y-3">
+                  {sortedParticipations.map((participation) => (
+                    <Link
+                      key={participation.id}
+                      to={`/players/${participation.user.id}`}
+                      className="block"
+                    >
+                      <PlacementRow participation={participation} />
+                    </Link>
+                  ))}
+                </div>
               </section>
-            ) : null}
 
-            <MatchTimeline
-              events={timelineEvents}
-              isError={timelineIsError}
-              isLoading={timelineIsLoading}
-            />
+              <section className="grid gap-4 md:grid-cols-3">
+                <StatTile
+                  icon={<ScrollText className="h-5 w-5" />}
+                  label="Раундов"
+                  value={match.outcome?.roundsPlayed ?? '—'}
+                />
+                <StatTile
+                  icon={<Trophy className="h-5 w-5" />}
+                  label="Причина"
+                  value={
+                    match.outcome
+                      ? endReasonLabels[match.outcome.endReason]
+                      : 'Итог ещё не зафиксирован'
+                  }
+                />
+                <StatTile
+                  icon={<Crown className="h-5 w-5" />}
+                  label="MVP"
+                  value={match.outcome?.mvp?.nickname ?? '—'}
+                />
+              </section>
 
-            <section className="rounded-[2rem] border border-border-subtle bg-bg-elev1 p-5 shadow-panel">
-              <div className="flex items-center justify-between gap-3">
-                <h2 className="font-display text-3xl text-text-primary">
-                  Голоса участников
-                </h2>
-                <span className="text-sm text-text-secondary">
-                  🜁 {totalCrowns} / 💩 {totalShits}
-                </span>
-              </div>
-              <div className="mt-5 space-y-3">
-                {sortedParticipations.map((participation) => {
-                  const receivedCrowns = votes.filter(
-                    (vote) =>
-                      vote.toUser.id === participation.user.id &&
-                      vote.voteType === 'positive',
-                  ).length
-                  const receivedShits = votes.filter(
-                    (vote) =>
-                      vote.toUser.id === participation.user.id &&
-                      vote.voteType === 'negative',
-                  ).length
-                  const myVote =
-                    votes.find(
+              {match.outcome?.finalNote ? (
+                <section className="rounded-[2rem] border border-border-subtle bg-bg-elev1 p-5 shadow-panel">
+                  <h2 className="font-display text-3xl text-text-primary">
+                    Итоговая заметка
+                  </h2>
+                  <p className="mt-4 text-sm leading-7 text-text-secondary">
+                    {match.outcome.finalNote}
+                  </p>
+                </section>
+              ) : null}
+
+              <MatchTimeline
+                events={timelineEvents}
+                isError={false}
+                isLoading={timelineIsLoading}
+              />
+
+              <section className="rounded-[2rem] border border-border-subtle bg-bg-elev1 p-5 shadow-panel">
+                <div className="flex items-center justify-between gap-3">
+                  <h2 className="font-display text-3xl text-text-primary">
+                    Голоса участников
+                  </h2>
+                  <span className="text-sm text-text-secondary">
+                    👑 {totalCrowns} / 💩 {totalShits}
+                  </span>
+                </div>
+                <div className="mt-5 space-y-3">
+                  {sortedParticipations.map((participation) => {
+                    const receivedCrowns = votes.filter(
                       (vote) =>
-                        vote.fromUser.id === currentUser?.id &&
-                        vote.toUser.id === participation.user.id,
-                    )?.voteType ?? null
+                        vote.toUser.id === participation.user.id &&
+                        vote.voteType === 'positive',
+                    ).length
+                    const receivedShits = votes.filter(
+                      (vote) =>
+                        vote.toUser.id === participation.user.id &&
+                        vote.voteType === 'negative',
+                    ).length
+                    const myVote =
+                      votes.find(
+                        (vote) =>
+                          vote.fromUser.id === currentUser?.id &&
+                          vote.toUser.id === participation.user.id,
+                      )?.voteType ?? null
 
-                  return (
+                    return (
+                      <div
+                        key={participation.id}
+                        className="flex flex-col gap-4 rounded-[1.5rem] border border-border-subtle bg-bg-base p-4 md:flex-row md:items-center md:justify-between"
+                      >
+                        <div className="space-y-2">
+                          <PlayerPill
+                            faction={participation.faction}
+                            user={participation.user}
+                          />
+                          <p className="text-sm text-text-secondary">
+                            Получено: 👑 {receivedCrowns} • 💩 {receivedShits}
+                          </p>
+                        </div>
+                        <VoteButtons
+                          currentVote={myVote}
+                          editable={
+                            Boolean(currentUser) &&
+                            participation.user.id !== currentUser?.id
+                          }
+                          onVote={(nextVoteType) =>
+                            void handleVote(participation.user.id, nextVoteType)
+                          }
+                        />
+                      </div>
+                    )
+                  })}
+                </div>
+              </section>
+
+              <CommentThread
+                comments={resolvedComments}
+                draft={commentDraft}
+                onDraftChange={setCommentDraft}
+                onPost={() => void handlePostComment()}
+              />
+            </div>
+
+            <aside className="space-y-4">
+              <section className="rounded-[2rem] border border-border-subtle bg-bg-elev1 p-5 shadow-panel">
+                <h3 className="font-display text-2xl text-text-primary">
+                  Эта партия в цифрах
+                </h3>
+                <div className="mt-4 space-y-3">
+                  <MiniFactRow
+                    icon={<Users className="h-4 w-4" />}
+                    label="Участников"
+                    value={String(match.participations.length)}
+                  />
+                  <MiniFactRow
+                    icon={<Castle className="h-4 w-4" />}
+                    label="Всего замков"
+                    value={String(
+                      match.participations.reduce(
+                        (sum, participation) => sum + (participation.castles ?? 0),
+                        0,
+                      ),
+                    )}
+                  />
+                  <MiniFactRow
+                    icon={<MessageSquare className="h-4 w-4" />}
+                    label="Комментариев"
+                    value={String(resolvedComments.length)}
+                  />
+                  <MiniFactRow
+                    icon={<Crown className="h-4 w-4" />}
+                    label="Голосов"
+                    value={String(votes.length)}
+                  />
+                </div>
+              </section>
+
+              <section className="rounded-[2rem] border border-border-subtle bg-bg-elev1 p-5 shadow-panel">
+                <h3 className="font-display text-2xl text-text-primary">
+                  Между участниками
+                </h3>
+                <p className="mt-3 text-sm leading-7 text-text-secondary">
+                  Быстрый виджет под будущий H2H: кто чаще встречается за одним
+                  столом и кто чаще забирает короны.
+                </p>
+                <div className="mt-4 space-y-3">
+                  {sortedParticipations.slice(0, 3).map((participation) => (
                     <div
                       key={participation.id}
-                      className="flex flex-col gap-4 rounded-[1.5rem] border border-border-subtle bg-bg-base p-4 md:flex-row md:items-center md:justify-between"
+                      className="rounded-2xl border border-border-subtle bg-bg-base p-3"
                     >
-                      <div className="space-y-2">
-                        <PlayerPill
-                          faction={participation.faction}
-                          user={participation.user}
-                        />
-                        <p className="text-sm text-text-secondary">
-                          Получено: 🜁 {receivedCrowns} • 💩 {receivedShits}
-                        </p>
-                      </div>
-                      <VoteButtons
-                        currentVote={myVote}
-                        editable={
-                          Boolean(currentUser) &&
-                          participation.user.id !== currentUser?.id
-                        }
-                        onVote={(nextVoteType) =>
-                          void handleVote(participation.user.id, nextVoteType)
-                        }
+                      <PlayerPill
+                        faction={participation.faction}
+                        size="sm"
+                        user={participation.user}
                       />
+                      <p className="mt-2 text-xs leading-6 text-text-tertiary">
+                        Чаще всего спорит за стол с {sortedParticipations[0].user.nickname}.
+                      </p>
                     </div>
-                  )
-                })}
-              </div>
+                  ))}
+                </div>
+              </section>
+            </aside>
+          </div>
+        ) : (
+          <div className="space-y-6">
+            <section className="rounded-[2rem] border border-border-subtle bg-bg-elev1 p-5 shadow-panel">
+              <h2 className="font-display text-3xl text-text-primary">
+                Турнирная таблица появится после старта партии
+              </h2>
+              <p className="mt-4 max-w-3xl text-sm leading-7 text-text-secondary">
+                Пока сессия ещё не сыграна, состав ведётся только через приглашения и
+                статусы RSVP. После старта здесь появятся фракции, места, замки и
+                остальная турнирная механика.
+              </p>
             </section>
 
             <CommentThread
@@ -521,70 +615,7 @@ function MatchDetailContent({
               onPost={() => void handlePostComment()}
             />
           </div>
-
-          <aside className="space-y-4">
-            <section className="rounded-[2rem] border border-border-subtle bg-bg-elev1 p-5 shadow-panel">
-              <h3 className="font-display text-2xl text-text-primary">
-                Эта партия в цифрах
-              </h3>
-              <div className="mt-4 space-y-3">
-                <MiniFactRow
-                  icon={<Users className="h-4 w-4" />}
-                  label="Участников"
-                  value={String(match.participations.length)}
-                />
-                <MiniFactRow
-                  icon={<Castle className="h-4 w-4" />}
-                  label="Всего замков"
-                  value={String(
-                    match.participations.reduce(
-                      (sum, participation) => sum + (participation.castles ?? 0),
-                      0,
-                    ),
-                  )}
-                />
-                <MiniFactRow
-                  icon={<MessageSquare className="h-4 w-4" />}
-                  label="Комментариев"
-                  value={String(resolvedComments.length)}
-                />
-                <MiniFactRow
-                  icon={<Crown className="h-4 w-4" />}
-                  label="Голосов"
-                  value={String(votes.length)}
-                />
-              </div>
-            </section>
-
-            <section className="rounded-[2rem] border border-border-subtle bg-bg-elev1 p-5 shadow-panel">
-              <h3 className="font-display text-2xl text-text-primary">
-                Между участниками
-              </h3>
-              <p className="mt-3 text-sm leading-7 text-text-secondary">
-                Быстрый виджет под будущий H2H: кто чаще встречается за одним
-                столом и кто чаще забирает короны.
-              </p>
-              <div className="mt-4 space-y-3">
-                {sortedParticipations.slice(0, 3).map((participation) => (
-                  <div
-                    key={participation.id}
-                    className="rounded-2xl border border-border-subtle bg-bg-base p-3"
-                  >
-                    <PlayerPill
-                      faction={participation.faction}
-                      size="sm"
-                      user={participation.user}
-                    />
-                    <p className="mt-2 text-xs leading-6 text-text-tertiary">
-                      Чаще всего спорит за стол с{' '}
-                      {sortedParticipations[0].user.nickname}.
-                    </p>
-                  </div>
-                ))}
-              </div>
-            </section>
-          </aside>
-        </div>
+        )}
       </main>
       <Toast
         message={toastState?.message ?? ''}
