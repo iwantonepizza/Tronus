@@ -951,6 +951,47 @@ def test_start_session_happy_path() -> None:
 
 
 @pytest.mark.django_db
+def test_start_session_replaces_legacy_planned_participations() -> None:
+    reference = _ensure_reference_data()
+    creator = _create_user(email="creator_legacy_start@example.com")
+    p1 = _create_user(email="p1_legacy_start@example.com")
+    p2 = _create_user(email="p2_legacy_start@example.com")
+    session = _create_planned_session(created_by=creator)
+
+    legacy_one = Participation.objects.create(
+        session=session,
+        user=creator,
+        faction=reference["greyjoy"],
+    )
+    legacy_two = Participation.objects.create(
+        session=session,
+        user=p1,
+        faction=reference["martell"],
+    )
+
+    _add_going_invite(session, creator)
+    _add_going_invite(session, p1)
+    _add_going_invite(session, p2)
+
+    result = start_session(
+        session=session,
+        factions_assignment={
+            creator.pk: "stark",
+            p1.pk: "lannister",
+            p2.pk: "baratheon",
+        },
+    )
+
+    assert result.status == GameSession.Status.IN_PROGRESS
+    assert Participation.objects.filter(pk__in=[legacy_one.pk, legacy_two.pk]).exists() is False
+
+    participations = list(result.participations.order_by("pk"))
+    assert len(participations) == 3
+    assert {p.user_id for p in participations} == {creator.pk, p1.pk, p2.pk}
+    assert {p.faction.slug for p in participations} == {"stark", "lannister", "baratheon"}
+
+
+@pytest.mark.django_db
 def test_start_session_rejects_user_without_going_invite() -> None:
     """start_session raises ValidationError if a user has no going invite."""
     _ensure_reference_data()

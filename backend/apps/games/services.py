@@ -383,6 +383,8 @@ def start_session(
     validate_session_setup(mode=locked_session.mode, faction_slugs=faction_slugs)
 
     # ── 4. Create Participation records ───────────────────────────────────
+    Participation.objects.select_for_update().filter(session=locked_session).delete()
+
     faction_objs: dict[str, Faction] = {
         f.slug: f for f in Faction.objects.filter(slug__in=faction_slugs)
     }
